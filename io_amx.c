@@ -143,6 +143,7 @@ new_amx(struct rc3600 *cs, struct iodev *iop, struct iodev *iop2)
 		AN(ap->ep[i]);
 	}
 	ap->iop->ins_func = dev_amx_insfunc;
+	ap->iop->priv = ap;
 	install_dev(cs, iop, NULL);
 	return (ap);
 }

@@ -214,8 +214,5 @@ cli_dev_get_unit(struct cli *cli, const char *drv1, const char *drv2, new_dev_f 
 			return (NULL);
 	}
 	rv = func(cli->cs, iop1, iop2);
-	iop1->priv = rv;
-	if (iop2 != NULL)
-		iop2->priv = rv;
 	return (rv);
 }

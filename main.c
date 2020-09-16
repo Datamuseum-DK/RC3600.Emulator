@@ -586,8 +586,8 @@ cpu_new(void)
 	cs->iodevs[0x3f] = &iodev_cpu;
 
 	iodev_cpu721.cs = cs;
-	cs->iodevs[0x01] = &iodev_cpu721;
-	cs->iodevs[0x02] = &iodev_cpu721;
+	//cs->iodevs[0x01] = &iodev_cpu721;
+	//cs->iodevs[0x02] = &iodev_cpu721;
 
 	iodev_cpu.init_func(&iodev_cpu);
 

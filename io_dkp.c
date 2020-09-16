@@ -63,7 +63,7 @@ struct io_dkp {
 	uint16_t		sec;
 	uint16_t		nsec;
 	uint16_t		core_adr;
-	struct iodev		dev[1];
+	struct iodev		*iop;
 };
 
 static void
@@ -166,6 +166,8 @@ do_xfer(struct iodev *iop, struct io_dkp *tp, int do_read)
 	uint8_t *p;
 	struct dkp_drive *dd;
 
+	AN(iop);
+	AN(tp);
 	callout_dev_sleep(iop, 200000);
 	dd = &tp->drive[tp->drv];
 	do {
@@ -208,8 +210,11 @@ static void*
 dev_dkp_thread(void *priv)
 {
 	struct iodev *iop = priv;
-	struct io_dkp *tp = iop->priv;
+	struct io_dkp *tp;
 
+	AN(iop);
+	tp = iop->priv;
+	AN(tp);
 	AZ(pthread_mutex_lock(&iop->mtx));
 	while (1) {
 		while (!iop->busy)
@@ -284,30 +289,29 @@ new_drive(struct iodev *iop, unsigned drive, struct dkp_drive *dp)
 	AZ(pthread_create(&dp->seek_thread, NULL, dkp_seek_thread, dp));
 }
 
-static struct iodev *
-new_dkp(struct rc3600 *cs, unsigned unit)
+static void * v_matchproto_(new_dev_f)
+new_dkp(struct rc3600 *cs, struct iodev *iop, struct iodev *iop2)
 {
 	struct io_dkp *tp;
 
+	AN(cs);
+	AN(iop);
+	AZ(iop2);
+
 	tp = calloc(1, sizeof *tp);
 	AN(tp);
-	if (unit == 0) {
-		tp->dev->unit = 073;
-		tp->dev->imask = 10;
-	}
-
-	tp->dev->ins_func = dev_dkp_iofunc;
-	tp->dev->priv = tp;
-	bprintf(tp->dev->name, "DKP%d", unit);
-	install_dev(cs, tp->dev, dev_dkp_thread);
-	new_drive(tp->dev, 0, &tp->drive[0]);
-	new_drive(tp->dev, 1, &tp->drive[1]);
-	new_drive(tp->dev, 2, &tp->drive[2]);
-	new_drive(tp->dev, 3, &tp->drive[3]);
+	tp->iop = iop;
+	tp->iop->ins_func = dev_dkp_iofunc;
+	new_drive(tp->iop, 0, &tp->drive[0]);
+	new_drive(tp->iop, 1, &tp->drive[1]);
+	new_drive(tp->iop, 2, &tp->drive[2]);
+	new_drive(tp->iop, 3, &tp->drive[3]);
 	// Disk Ready
-	tp->dev->ireg_a |= 0x40;
+	tp->iop->ireg_a |= 0x40;
 
-	return (tp->dev);
+	tp->iop->priv = tp;
+	install_dev(cs, tp->iop, dev_dkp_thread);
+	return (tp);
 }
 
 static void
@@ -359,8 +363,11 @@ cli_dkp(struct cli *cli)
 
 	cli->ac--;
 	cli->av++;
-	tp = get_dev_unit(cli->cs, "DKP", new_dkp, cli)->priv;
+	tp = cli_dev_get_unit(cli, "DKP", NULL, new_dkp);
+	if (tp == NULL)
+		return;
 	AN(tp);
+	AN(tp->iop->priv);
 
 	while (cli->ac && !cli->status) {
 		if (!strcasecmp(*cli->av, "load")) {

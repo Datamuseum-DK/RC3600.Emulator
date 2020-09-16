@@ -46,7 +46,7 @@
 
 struct io_fdd {
 	int			speed;
-	struct iodev		dev[1];
+	struct iodev		*iop;
 	uint8_t			img[FDD_SIZE];
 	uint8_t			wbuf[FDD_BPS];
 	uint8_t			sect;
@@ -121,29 +121,24 @@ dev_fdd_iofunc(struct iodev *iop, uint16_t ioi, uint16_t *reg)
 	}
 }
 
-static struct iodev *
-new_fdd(struct rc3600 *cs, unsigned unit)
+static void * v_matchproto_(new_dev_f)
+new_fdd(struct rc3600 *cs, struct iodev *iop1, struct iodev *iop2)
 {
 	struct io_fdd *fp;
 
+	AN(cs);
+	AN(iop1);
+	AZ(iop2);
+
 	fp = calloc(1, sizeof *fp);
 	AN(fp);
-	if (unit == 0) {
-		fp->dev->unit = 061;
-		fp->dev->imask = 7;
-	}
-	if (unit == 1) {
-		fp->dev->unit = 064;
-		fp->dev->imask = 7;
-	}
-
+	fp->iop = iop1;
 	fp->speed = 10000;
 
-	fp->dev->ins_func = dev_fdd_iofunc;
-	fp->dev->priv = fp;
-	bprintf(fp->dev->name, "FDD%d", unit);
-	install_dev(cs, fp->dev, NULL);
-	return (fp->dev);
+	fp->iop->ins_func = dev_fdd_iofunc;
+	fp->iop->priv = fp;
+	install_dev(cs, fp->iop, NULL);
+	return (fp);
 }
 
 static void
@@ -159,7 +154,7 @@ fdd_load_save(struct io_fdd *fp, struct cli *cli, int save)
 	    save ?  O_WRONLY | O_CREAT | O_TRUNC : O_RDONLY,
 	    0644);
 	if (fd < 0) {
-		(void)cli_error(cli, "Cannot open %s: %s\n",
+		cli_error(cli, "Cannot open %s: %s\n",
 		    cli->av[1], strerror(errno));
 		return;
 	}
@@ -170,7 +165,7 @@ fdd_load_save(struct io_fdd *fp, struct cli *cli, int save)
 	e = errno;
 	AZ(close(fd));
 	if (sz < 0 || (size_t)sz != sizeof fp->img) {
-		(void)cli_error(cli, "%s error %s: %s\n",
+		cli_error(cli, "%s error %s: %s\n",
 		    save ? "Write" : "Read",
 		    cli->av[1], strerror(e));
 		return;
@@ -187,11 +182,13 @@ cli_fdd(struct cli *cli)
 
 	cli->ac--;
 	cli->av++;
-	fp = get_dev_unit(cli->cs, "FDD", new_fdd, cli)->priv;
+	fp = cli_dev_get_unit(cli, "FDD", NULL, new_fdd);
+	if (fp == NULL)
+		return;
 	AN(fp);
 
 	while (cli->ac && !cli->status) {
-		if (cli_dev_trace(fp->dev, cli))
+		if (cli_dev_trace(fp->iop, cli))
 			continue;
 		if (!strcasecmp(*cli->av, "load")) {
 			fdd_load_save(fp, cli, 0);

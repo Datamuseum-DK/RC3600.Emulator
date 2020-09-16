@@ -84,15 +84,13 @@ nakskov: rc3600
 
 co040:	rc3600
 	./rc3600 \
+		-T /critter/_36 \
 		'ptr 0' \
 		'ptp 0' \
-		'amx trace 0' \
-		'tty telnet localhost:2100' \
-		'amx port 1 telnet 127.0.0.1:2101' \
+		'amx port 1 telnet :2101' \
 		'amx port 2 telnet :2102' \
 		'amx port 3 telnet :2103' \
 		"fdd 0 load ${FDDIR}/_sg0113.flp" \
-		"fdd 1" \
 		'switch 0000061' \
 		'tty speed 9600' \
 		'autoload' \
@@ -104,10 +102,10 @@ co040:	rc3600
 		'tty << " 2000"' \
 		'tty match xon ' \
 		'tty << " 2000"' \
-		'tty match xon ' \
-		'tty << ""' \
-		'tty match xon ' \
-		'tty << ""' \
+		'tty match expect "DATE (YY.MM.DD)="' \
+		"tty << `date +%y.%m.%d`" \
+		'tty match expect "TIME (HH.MM.SS)="' \
+		"tty << `date +%H.%M.%S`" \
 		2>&1 | tee /critter/_3
 
 
