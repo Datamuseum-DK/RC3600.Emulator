@@ -117,7 +117,12 @@ elastic_match_wait(const struct elastic *ep)
 	while (!em->match)
 		AZ(pthread_cond_wait(&em->cond, &em->mtx));
 	AZ(pthread_mutex_unlock(&em->mtx));
-	usleep(100000);
+
+	/*
+	 * This sleep delays long enough that the DOMUS TTY driver will
+	 * be ready for a "tty << something" command.
+	 */
+	usleep(150000);
 }
 
 int v_matchproto_(cli_elastic_f)

@@ -27,7 +27,9 @@ default:	nakskov
 
 test:	rc3600
 	./rc3600 \
+		-T /critter/_36 \
 		'tty telnet :2100' \
+		'tty trace 1' \
 		'ptp > _ptp' \
 		'ptr 0' \
 		'dkp 0 load 0 /home/phk/DDHF/DDHF/Rc3600/DKP/011/__' \
@@ -42,6 +44,8 @@ test:	rc3600
 nakskov: rc3600
 	./rc3600 \
 		-T /critter/_36 \
+		'tty trace 1' \
+		'tty speed 110' \
 		'tty telnet :2000' \
 		'ptp 0' \
 		'ptr 0' \
@@ -55,7 +59,6 @@ nakskov: rc3600
 		'amx port 6 telnet :2106' \
 		'amx port 7 telnet :2107' \
 		'switch 0000073' \
-		'tty speed 9600' \
 		'tty match arm "SYSTEM:"' \
 		'autoload' \
 		'tty match wait' \
@@ -77,8 +80,10 @@ nakskov: rc3600
 		'tty match xon ' \
 		'tty << "COPS"' \
 		'tty match expect "DATE (YY.MM.DD)="' \
+		'tty match xon ' \
 		"tty << `date +%y.%m.%d`" \
 		'tty match expect "TIME (HH.MM.SS)="' \
+		'tty match xon ' \
 		"tty << `date +%H.%M.%S`" \
 		2>&1 | tee /critter/_3
 
@@ -87,24 +92,30 @@ co040:	rc3600
 		-T /critter/_36 \
 		'ptr 0' \
 		'ptp 0' \
+		'tty telnet :2000' \
 		'amx port 1 telnet :2101' \
 		'amx port 2 telnet :2102' \
 		'amx port 3 telnet :2103' \
 		"fdd 0 load ${FDDIR}/_sg0113.flp" \
 		'switch 0000061' \
-		'tty speed 9600' \
+		'tty speed 110' \
 		'autoload' \
 		'tty match xon ' \
-		'tty << " BOOT CO040"' \
+		'tty << "BOOT CO040"' \
+		'tty match expect "TERM 32: "' \
 		'tty match xon ' \
-		'tty << " 2000"' \
+		'tty << "2000"' \
+		'tty match expect "TERM 01: "' \
 		'tty match xon ' \
-		'tty << " 2000"' \
+		'tty << "2000"' \
+		'tty match expect "TERM 02: "' \
 		'tty match xon ' \
-		'tty << " 2000"' \
+		'tty << "2000"' \
 		'tty match expect "DATE (YY.MM.DD)="' \
+		'tty match xon ' \
 		"tty << `date +%y.%m.%d`" \
 		'tty match expect "TIME (HH.MM.SS)="' \
+		'tty match xon ' \
 		"tty << `date +%H.%M.%S`" \
 		2>&1 | tee /critter/_3
 

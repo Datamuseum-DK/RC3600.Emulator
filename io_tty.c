@@ -52,19 +52,18 @@ dev_tti_thread(void *priv)
 	char buf[1];
 	ssize_t sz;
 
-	AZ(pthread_mutex_lock(&iod->mtx));
 	while (1) {
-		while (iod->done)
-			AZ(pthread_cond_wait(&iod->cond, &iod->mtx));
-		iod->busy = 1;
-		AZ(pthread_mutex_unlock(&iod->mtx));
 		sz = elastic_get(tp->ep, buf, 1);
 		assert(sz == 1);
 		AZ(pthread_mutex_lock(&iod->mtx));
+		dev_trace(tp->i_dev, "TTI 0x%02x\n", buf[0]);
 		iod->ireg_a = buf[0];
 		iod->busy = 0;
 		iod->done = 1;
 		intr_raise(iod);
+		while (iod->done)
+			AZ(pthread_cond_wait(&iod->cond, &iod->mtx));
+		AZ(pthread_mutex_unlock(&iod->mtx));
 	}
 }
 
@@ -138,6 +137,10 @@ cli_tty(struct cli *cli)
 		return;
 
 	while (cli->ac && !cli->status) {
+		if (cli_dev_trace(tp->i_dev, cli)) {
+			tp->o_dev->trace = tp->i_dev->trace;
+			continue;
+		}
 		if (!strcasecmp(*cli->av, "speed")) {
 			if (cli_n_args(cli, 1))
 				return;
