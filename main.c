@@ -29,6 +29,7 @@
  *
  */
 
+#include <errno.h>
 #include <fcntl.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -45,6 +46,8 @@ trace_state(struct rc3600 *cs)
 	char buf[BUFSIZ];
 
 	AN(cs);
+	if (cs->fd_trace < 0)
+		return;
 	bprintf(buf,
 	    "I %jd %d %04x %04x %06o  %04x %04x %04x %04x %c"
 	    // " s%.6f r%.6f d%.6f"
@@ -65,7 +68,7 @@ trace_state(struct rc3600 *cs)
 	    cs->ins_count - cs->last_core,
 	    core_disass(cs, cs->pc)
 	);
-	(void)write(cs->trace, buf, strlen(buf));
+	(void)write(cs->fd_trace, buf, strlen(buf));
 }
 
 void
@@ -74,10 +77,13 @@ trace(const struct rc3600 *cs, const char *fmt, ...)
 	va_list ap;
 	char buf[BUFSIZ];
 
+	AN(cs);
+	if (cs->fd_trace < 0)
+		return;
 	va_start(ap, fmt);
 	vsnprintf(buf, sizeof buf, fmt, ap);
 	va_end(ap);
-	(void)write(cs->trace, buf, strlen(buf));
+	(void)write(cs->fd_trace, buf, strlen(buf));
 }
 
 void
@@ -87,11 +93,11 @@ dev_trace(const struct iodev *iop, const char *fmt, ...)
 	char buf[BUFSIZ];
 
 	AN(iop);
+	if (iop->cs->fd_trace < 0 || !iop->trace)
+		return;
 	va_start(ap, fmt);
-	if (iop->trace) {
-		vsnprintf(buf, sizeof buf, fmt, ap);
-		(void)write(iop->cs->trace, buf, strlen(buf));
-	}
+	vsnprintf(buf, sizeof buf, fmt, ap);
+	(void)write(iop->cs->fd_trace, buf, strlen(buf));
 	va_end(ap);
 }
 
@@ -589,8 +595,7 @@ cpu_new(void)
 	TAILQ_INIT(&cs->masked_irq_list);
 	TAILQ_INIT(&cs->units_list);
 	TAILQ_INIT(&cs->callouts);
-	cs->trace = open("/critter/_36", O_WRONLY | O_CREAT | O_TRUNC, 0644);
-	assert(cs->trace > STDERR_FILENO);
+	cs->fd_trace = -1;
 
 	AZ(pthread_create(&cs->cthread, NULL, cpu_thread, cs));
 
@@ -614,13 +619,22 @@ main(int argc, char **argv)
 	AZ(ins_timing_check());
 
 
-	while ((ch = getopt(argc, argv, "b:ht")) != -1) {
+	while ((ch = getopt(argc, argv, "b:htT:")) != -1) {
 		switch (ch) {
 		case 'b':
 			bare = 1;
 			break;
 		case 't':
 			cs->do_trace++;
+			break;
+		case 'T':
+			cs->fd_trace =
+			    open(optarg, O_WRONLY|O_CREAT|O_TRUNC, 0644);
+			if (cs->fd_trace < 0) {
+				fprintf(stderr, "Cannot open: %s: %s\n",
+				    optarg, strerror(errno));
+				exit(2);
+			}
 			break;
 		default:
 			fprintf(stderr, "Usage...\n");

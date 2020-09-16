@@ -90,7 +90,7 @@ struct rc3600 {
 	uint64_t		ins_count;
 
 	int			do_trace;
-	int			trace;
+	int			fd_trace;
 
 	pthread_mutex_t		callout_mtx;
 	TAILQ_HEAD(, callout)	callouts;

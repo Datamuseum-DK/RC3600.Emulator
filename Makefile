@@ -41,8 +41,9 @@ test:	rc3600
 
 nakskov: rc3600
 	./rc3600 \
+		-T /critter/_36 \
 		'tty telnet :2000' \
-		'ptp > _ptp' \
+		'ptp 0' \
 		'ptr 0' \
 		"dkp 0 load 0 ${DKPDIR}/dkp_011.bin" \
 		'amx port 0 telnet :2100' \
