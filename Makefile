@@ -21,6 +21,7 @@ LDFLAGS	+= -lm
 FDDIR = /critter/DDHF/20190815_8inch_floppies
 
 DKPDIR = DKP/
+PTRDIR = PTR/
 
 default:	nakskov
 
@@ -147,7 +148,7 @@ timer:	rc3600
 		'tty telnet :2100' \
 		'tty speed 9600' \
 		'switch 0000012' \
-		'ptr 0 < RCSL_44_RT_1558_RC3600_INSTRUCTION_TIMER_TEST.bin' \
+		'ptr 0 < ${PTRDIR}/RCSL_44_RT_1558_RC3600_INSTRUCTION_TIMER_TEST.bin' \
 		'tty match arm "STARTADDR   400 ?  "' \
 		'autoload' \
 		'tty match wait' \
