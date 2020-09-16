@@ -40,8 +40,8 @@
 struct io_tty {
 	int			speed;
 	struct elastic		*ep;
-	struct iodev		i_dev[1];
-	struct iodev		o_dev[1];
+	struct iodev		*i_dev;
+	struct iodev		*o_dev;
 };
 
 static void*
@@ -101,31 +101,29 @@ dev_tto_iofunc(struct iodev *iop, uint16_t ioi, uint16_t *reg)
 	}
 }
 
-static struct iodev *
-new_tty(struct rc3600 *cs, unsigned unit)
+static void * v_matchproto_(new_dev_f)
+new_tty(struct iodev *iop1, struct iodev *iop2)
 {
 	struct io_tty *tp;
 
+	AN(iop1);
+	AN(iop2);
 	tp = calloc(1, sizeof *tp);
 	AN(tp);
+	tp->i_dev = iop1;
+	tp->o_dev = iop2;
 	tp->speed = 2400;
-	if (unit == 0) {
-		tp->i_dev->unit = 8;
-		tp->i_dev->imask = 14;
-		tp->o_dev->unit = 9;
-		tp->o_dev->imask = 15;
-	}
-	tp->ep = elastic_new(cs, O_RDWR);
+	tp->ep = elastic_new(tp->i_dev->cs, O_RDWR);
 	AN(tp->ep);
+
 	tp->i_dev->priv = tp;
-	bprintf(tp->i_dev->name, "TTI%u", unit);
-	install_dev(cs, tp->i_dev, dev_tti_thread);
+	install_dev(tp->i_dev, dev_tti_thread);
 
 	tp->o_dev->priv = tp;
 	tp->o_dev->ins_func = dev_tto_iofunc;
-	bprintf(tp->o_dev->name, "TTO%u", unit);
-	install_dev(cs, tp->o_dev, NULL);
-	return (tp->i_dev);
+
+	install_dev(tp->o_dev, NULL);
+	return (tp);
 }
 
 void v_matchproto_(cli_func_f)
@@ -135,8 +133,9 @@ cli_tty(struct cli *cli)
 
 	cli->ac--;
 	cli->av++;
-	tp = get_dev_unit(cli->cs, "TTY", new_tty, cli)->priv;
-	AN(tp);
+	tp = cli_dev_get_unit(cli, "TTI", "TTO", new_tty);
+	if (tp == NULL)
+		return;
 
 	while (cli->ac && !cli->status) {
 		if (!strcasecmp(*cli->av, "speed")) {

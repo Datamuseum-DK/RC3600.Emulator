@@ -290,17 +290,16 @@ new_drive(struct iodev *iop, unsigned drive, struct dkp_drive *dp)
 }
 
 static void * v_matchproto_(new_dev_f)
-new_dkp(struct rc3600 *cs, struct iodev *iop, struct iodev *iop2)
+new_dkp(struct iodev *iop1, struct iodev *iop2)
 {
 	struct io_dkp *tp;
 
-	AN(cs);
-	AN(iop);
+	AN(iop1);
 	AZ(iop2);
 
 	tp = calloc(1, sizeof *tp);
 	AN(tp);
-	tp->iop = iop;
+	tp->iop = iop1;
 	tp->iop->ins_func = dev_dkp_iofunc;
 	new_drive(tp->iop, 0, &tp->drive[0]);
 	new_drive(tp->iop, 1, &tp->drive[1]);
@@ -310,7 +309,7 @@ new_dkp(struct rc3600 *cs, struct iodev *iop, struct iodev *iop2)
 	tp->iop->ireg_a |= 0x40;
 
 	tp->iop->priv = tp;
-	install_dev(cs, tp->iop, dev_dkp_thread);
+	install_dev(tp->iop, dev_dkp_thread);
 	return (tp);
 }
 

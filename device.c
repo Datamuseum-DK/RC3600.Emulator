@@ -63,7 +63,6 @@ struct dev_assignment {
 #define IBM_TXT	"IBM Channel"
 #define LPS_TXT	"Serial Printer"
 #define BSC_TXT	"BSC Controller"
-#define CLB_TXT	"Charaband Printer"
 #define FPA_TXT	"Inter Processor Channel"
 #define HLC_TXT	"HDLC Controller"
 #define SMX_TXT	"Synchronous Multiplexor"
@@ -171,6 +170,7 @@ mk_iop(struct cli *cli, const char *drvname, unsigned unit)
 	iop->unit = da->address;
 	iop->imask = da->imask;
 	bprintf(iop->name, "%s%u", drvname, unit);
+	iop->cs = cli->cs;
 	return (iop);
 }
 
@@ -213,6 +213,6 @@ cli_dev_get_unit(struct cli *cli, const char *drv1, const char *drv2, new_dev_f 
 		if (iop2 == NULL)
 			return (NULL);
 	}
-	rv = func(cli->cs, iop1, iop2);
+	rv = func(iop1, iop2);
 	return (rv);
 }

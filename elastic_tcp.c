@@ -45,7 +45,7 @@
 #include "elastic.h"
 
 struct acceptor_arg {
-	struct elastic 			*ep;
+	struct elastic			*ep;
 	int				fd;
 	int				fd2;
 	int				telnet;
@@ -71,7 +71,6 @@ elastic_telnet_acceptor(void *priv)
 
 	memcpy(&aa, priv, sizeof aa);
 	free(priv);
-	
 
 	AZ(listen(aa.fd, 0));
 	while (1) {
@@ -80,17 +79,17 @@ elastic_telnet_acceptor(void *priv)
 		aa.ws = elastic_subscribe(aa.ep, elastic_fd_txfunc, &aa);
 
 		buf[0] = 255;		// TELNET
-		buf[1] = 251; 		// WILL
+		buf[1] = 251;		// WILL
 		buf[2] = 1;		// ECHO
 		(void)write(fd, buf, 3);
 
 		buf[0] = 255;		// TELNET
-		buf[1] = 251; 		// WILL
+		buf[1] = 251;		// WILL
 		buf[2] = 3;		// SUPRESS_GO_AHEAD
 		(void)write(fd, buf, 3);
 
 		buf[0] = 255;		// TELNET
-		buf[1] = 253; 		// DO
+		buf[1] = 253;		// DO
 		buf[2] = 3;		// SUPRESS_GO_AHEAD
 		(void)write(fd, buf, 3);
 

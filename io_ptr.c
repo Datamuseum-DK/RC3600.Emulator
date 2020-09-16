@@ -40,7 +40,7 @@
 struct io_ptr {
 	int			speed;
 	struct elastic		*ep;
-	struct iodev		iop[1];
+	struct iodev		*iop;
 };
 
 static void*
@@ -69,24 +69,22 @@ dev_ptr_thread(void *priv)
 	}
 }
 
-static struct iodev *
-new_ptr(struct rc3600 *cs, unsigned unit)
+static void * v_matchproto_(new_dev_f)
+new_ptr(struct iodev *iop1, struct iodev *iop2)
 {
 	struct io_ptr *tp;
 
+	AN(iop1);
+	AZ(iop2);
 	tp = calloc(1, sizeof *tp);
 	AN(tp);
-	if (unit == 0) {
-		tp->iop->unit = 10;
-		tp->iop->imask = 11;
-	}
+	tp->iop = iop1;
 	tp->speed = 2000;
-	tp->ep = elastic_new(cs, O_RDONLY);
+	tp->ep = elastic_new(tp->iop->cs, O_RDONLY);
 	AN(tp->ep);
 	tp->iop->priv = tp;
-	bprintf(tp->iop->name, "PTR%u", unit);
-	install_dev(cs, tp->iop, dev_ptr_thread);
-	return (tp->iop);
+	install_dev(tp->iop, dev_ptr_thread);
+	return (tp);
 }
 
 void v_matchproto_(cli_func_f)
@@ -96,7 +94,9 @@ cli_ptr(struct cli *cli)
 
 	cli->ac--;
 	cli->av++;
-	tp = get_dev_unit(cli->cs, "PTR", new_ptr, cli)->priv;
+	tp = cli_dev_get_unit(cli, "PTR", NULL, new_ptr);
+	if (tp == NULL)
+		return;
 	AN(tp);
 
 	while (cli->ac && !cli->status) {

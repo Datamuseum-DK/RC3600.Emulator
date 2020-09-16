@@ -114,42 +114,6 @@ now(void)
 
 /**********************************************************************/
 
-struct iodev *
-get_dev_unit(struct rc3600 *cs, const char *drvname, newdev_f *func,
-    struct cli *cli)
-{
-	struct iodev *iop;
-	char *p;
-	unsigned long ul;
-	unsigned unit;
-
-	AN(cs);
-	AN(drvname);
-	AN(func);
-
-	p = NULL;
-	unit = 0;
-	if (cli->ac > 0) {
-		ul = strtoul(cli->av[0], &p, 0);
-		if (p != NULL && *p == '\0' && ul <= 63) {
-			unit = (unsigned)ul;
-			cli->ac--;
-			cli->av++;
-		}
-	}
-	TAILQ_FOREACH(iop, &cs->units_list, units_list)
-		if (iop->units_name == drvname && iop->units_unit == unit)
-			break;
-	if (iop == NULL) {
-		iop = func(cs, unit);
-		AN(iop);
-		iop->units_unit = unit;
-		iop->units_name = drvname;
-		TAILQ_INSERT_TAIL(&cs->units_list, iop, units_list);
-	}
-	return (iop);
-}
-
 int
 cli_dev_trace(struct iodev *iop, struct cli *cli)
 {
@@ -165,10 +129,13 @@ cli_dev_trace(struct iodev *iop, struct cli *cli)
 }
 
 void
-install_dev(struct rc3600 *cs, struct iodev *iop, iodev_thr *thr)
+install_dev(struct iodev *iop, iodev_thr *thr)
 {
-	AN(cs);
+	struct rc3600 *cs;
+
 	AN(iop);
+	cs = iop->cs;
+	AN(cs);
 	AN(iop->unit);
 	AZ(cs->iodevs[iop->unit]);
 	AN(iop->imask);

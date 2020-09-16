@@ -122,11 +122,10 @@ dev_fdd_iofunc(struct iodev *iop, uint16_t ioi, uint16_t *reg)
 }
 
 static void * v_matchproto_(new_dev_f)
-new_fdd(struct rc3600 *cs, struct iodev *iop1, struct iodev *iop2)
+new_fdd(struct iodev *iop1, struct iodev *iop2)
 {
 	struct io_fdd *fp;
 
-	AN(cs);
 	AN(iop1);
 	AZ(iop2);
 
@@ -137,7 +136,7 @@ new_fdd(struct rc3600 *cs, struct iodev *iop1, struct iodev *iop2)
 
 	fp->iop->ins_func = dev_fdd_iofunc;
 	fp->iop->priv = fp;
-	install_dev(cs, fp->iop, NULL);
+	install_dev(fp->iop, NULL);
 	return (fp);
 }
 

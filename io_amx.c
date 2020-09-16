@@ -124,12 +124,11 @@ dev_amx_insfunc(struct iodev *iop, uint16_t ioi, uint16_t *reg)
 }
 
 static void * v_matchproto_(new_dev_f)
-new_amx(struct rc3600 *cs, struct iodev *iop, struct iodev *iop2)
+new_amx(struct iodev *iop, struct iodev *iop2)
 {
 	struct io_amx *ap;
 	int i;
 
-	AN(cs);
 	AN(iop);
 	AZ(iop2);
 
@@ -139,12 +138,12 @@ new_amx(struct rc3600 *cs, struct iodev *iop, struct iodev *iop2)
 	ap->speed = 2400;
 
 	for (i = 0; i < NCHAN; i++) {
-		ap->ep[i] = elastic_new(cs, O_RDWR);
+		ap->ep[i] = elastic_new(ap->iop->cs, O_RDWR);
 		AN(ap->ep[i]);
 	}
 	ap->iop->ins_func = dev_amx_insfunc;
 	ap->iop->priv = ap;
-	install_dev(cs, iop, NULL);
+	install_dev(iop, NULL);
 	return (ap);
 }
 

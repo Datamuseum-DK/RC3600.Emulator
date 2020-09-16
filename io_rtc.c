@@ -59,21 +59,15 @@ dev_rtc_iofunc(struct iodev *iop, uint16_t ioi, uint16_t *reg)
 	}
 }
 
-static struct iodev *
-new_rtc(struct rc3600 *cs, unsigned unit)
+static void * v_matchproto_(new_dev_f)
+new_rtc(struct iodev *iop1, struct iodev *iop2)
 {
-	struct iodev *iop;
 
-	iop = calloc(1, sizeof *iop);
-	AN(iop);
-	if (unit == 0) {
-		iop->unit = 12;
-		iop->imask = 13;
-	}
-	iop->ins_func = dev_rtc_iofunc;
-	bprintf(iop->name, "RTC%u", unit);
-	install_dev(cs, iop, NULL);
-	return (iop);
+	AN(iop1);
+	AZ(iop2);
+	iop1->ins_func = dev_rtc_iofunc;
+	install_dev(iop1, NULL);
+	return (iop1);
 }
 
 void v_matchproto_(cli_func_f)
@@ -83,7 +77,9 @@ cli_rtc(struct cli *cli)
 
 	cli->ac--;
 	cli->av++;
-	iop = get_dev_unit(cli->cs, "RTC", new_rtc, cli);
+	iop = cli_dev_get_unit(cli, "RTC", NULL, new_rtc);
+	if (iop == NULL)
+		return;
 
 	while (cli->ac && !cli->status) {
 		if (cli_dev_trace(iop, cli))
