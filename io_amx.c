@@ -55,7 +55,7 @@ struct io_amx {
 	int			chan;
 	uint16_t		select[NCHAN];
 	struct elastic		*ep[NCHAN];
-	struct iodev		iop[1];
+	struct iodev		*iop;
 };
 
 static void
@@ -117,42 +117,34 @@ dev_amx_insfunc(struct iodev *iop, uint16_t ioi, uint16_t *reg)
 		break;
 	case DOC:
 		break;
-		
 	default:
 		break;
 	}
 	std_io_ins(iop, ioi, reg);
 }
 
-static struct iodev *
-new_amx(struct rc3600 *cs, unsigned unit)
+static void * v_matchproto_(new_dev_f)
+new_amx(struct rc3600 *cs, struct iodev *iop, struct iodev *iop2)
 {
 	struct io_amx *ap;
 	int i;
 
+	AN(cs);
+	AN(iop);
+	AZ(iop2);
+
 	ap = calloc(1, sizeof *ap);
 	AN(ap);
+	ap->iop = iop;
 	ap->speed = 2400;
-
-	switch (unit) {
-	case 0: ap->iop->unit = 42; break;
-	case 1: ap->iop->unit = 43; break;
-	case 2: ap->iop->unit = 62; break;
-	case 3: ap->iop->unit = 20; break;
-	default: break;
-	}
-	ap->iop->imask = 2;
 
 	for (i = 0; i < NCHAN; i++) {
 		ap->ep[i] = elastic_new(cs, O_RDWR);
 		AN(ap->ep[i]);
 	}
-	ap->iop->priv = ap;
 	ap->iop->ins_func = dev_amx_insfunc;
-	bprintf(ap->iop->name, "AMX%u", unit);
-	install_dev(cs, ap->iop, NULL);
-
-	return (ap->iop);
+	install_dev(cs, iop, NULL);
+	return (ap);
 }
 
 void v_matchproto_(cli_func_f)
@@ -163,8 +155,9 @@ cli_amx(struct cli *cli)
 
 	cli->ac--;
 	cli->av++;
-	ap = get_dev_unit(cli->cs, "AMX", new_amx, cli)->priv;
-	AN(ap);
+	ap = cli_dev_get_unit(cli, "AMX", NULL, new_amx);
+	if (ap == NULL)
+		return;
 
 	while (cli->ac && !cli->status) {
 		if (cli_dev_trace(ap->iop, cli))
@@ -179,7 +172,7 @@ cli_amx(struct cli *cli)
 		}
 		if (!strcasecmp(*cli->av, "port")) {
 			if (cli->ac < 2) {
-				cli_n_args(cli, 1);
+				(void)cli_n_args(cli, 1);
 				return;
 			}
 			port = atoi(cli->av[1]);

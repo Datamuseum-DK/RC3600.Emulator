@@ -185,6 +185,9 @@ typedef struct iodev *newdev_f(struct rc3600 *cs, unsigned unit);
 struct iodev *get_dev_unit(struct rc3600 *cs, const char *name, newdev_f *,
     struct cli *cli);
 
+typedef void *new_dev_f(struct rc3600 *cs, struct iodev *, struct iodev *);
+void *cli_dev_get_unit(struct cli *, const char *, const char *, new_dev_f *);
+
 int cli_dev_trace(struct iodev *iop, struct cli *cli);
 
 void install_dev(struct rc3600 *cs, struct iodev *iop, iodev_thr *thr);

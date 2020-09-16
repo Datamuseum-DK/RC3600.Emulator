@@ -1,6 +1,6 @@
 
 OBJS	= main.o core.o autorom.o
-OBJS	+= ins_exec.o ins_timing.o interrupt.o
+OBJS	+= ins_exec.o ins_timing.o interrupt.o device.o
 OBJS	+= elastic.o elastic_fd.o elastic_tcp.o elastic_match.o
 OBJS	+= callout.o
 OBJS	+= disass.o
@@ -187,6 +187,7 @@ clean:
 main.o:			rc3600.h vav.h main.c
 core.o:			rc3600.h core.c
 autorom.o:		rc3600.h autorom.c
+device.o:		rc3600.h device.c
 ins_exec.o:		rc3600.h ins_exec.c
 ins_timing.o:		rc3600.h ins_timing.c
 interrupt.o:		rc3600.h interrupt.c
