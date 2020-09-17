@@ -98,6 +98,11 @@ struct rc3600 {
 
 void rc3600_exec(struct rc3600 *);
 
+void cpu_start(struct rc3600 *cs);
+void cpu_stop(struct rc3600 *cs);
+void cpu_instr(struct rc3600 *cs);
+
+
 /* CLI ****************************************************************/
 
 struct cli {
@@ -107,6 +112,8 @@ struct cli {
 	int			ac;
 	char			**av;
 };
+
+int cli_exec(struct rc3600 *, const char *);
 
 typedef void cli_func_f(struct cli *);
 

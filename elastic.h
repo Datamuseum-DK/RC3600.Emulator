@@ -73,7 +73,7 @@ void elastic_inject(struct elastic *ep, const void *ptr, ssize_t len);
 
 void elastic_put(struct elastic *ep, const void *ptr, ssize_t len);
 ssize_t elastic_get(struct elastic *ep, void *ptr, ssize_t len);
-int elastic_empty(struct elastic *ep);
+int elastic_empty(const struct elastic *ep);
 
 typedef int cli_elastic_f(struct elastic *ep, struct cli *);
 

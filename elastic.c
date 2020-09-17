@@ -215,7 +215,7 @@ elastic_get(struct elastic *ep, void *ptr, ssize_t len)
 }
 
 int
-elastic_empty(struct elastic *ep)
+elastic_empty(const struct elastic *ep)
 {
 	return(TAILQ_EMPTY(&ep->chunks_in));
 }
@@ -230,9 +230,9 @@ cli_elastic(struct elastic *ep, struct cli *cli)
 		cli_printf(cli, "\t\tElastic buffer arguments\n");
 		cli_printf(cli, "\t<< <string>\n");
 		cli_printf(cli, "\t\tInput <string> + CR into buffer\n");
-		cli_elastic_fd(NULL, cli);
-		cli_elastic_tcp(NULL, cli);
-		cli_elastic_match(NULL, cli);
+		(void)cli_elastic_fd(NULL, cli);
+		(void)cli_elastic_tcp(NULL, cli);
+		(void)cli_elastic_match(NULL, cli);
 		return (0);
 	}
 

@@ -1,5 +1,5 @@
 
-OBJS	= main.o core.o autorom.o
+OBJS	= main.o cli.o core.o autorom.o
 OBJS	+= ins_exec.o ins_timing.o interrupt.o device.o
 OBJS	+= elastic.o elastic_fd.o elastic_tcp.o elastic_match.o
 OBJS	+= callout.o
@@ -198,7 +198,8 @@ rc3600:	${OBJS}
 clean:
 	rm -f *.o *.tmp rc3600
 
-main.o:			rc3600.h vav.h main.c
+main.o:			rc3600.h main.c
+cli.o:			rc3600.h vav.h cli.c
 core.o:			rc3600.h core.c
 autorom.o:		rc3600.h autorom.c
 device.o:		rc3600.h device.c
