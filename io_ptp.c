@@ -92,6 +92,11 @@ cli_ptp(struct cli *cli)
 {
 	struct io_ptp *tp;
 
+	if (cli->help) {
+		cli_io_help(cli, "Paper Tape Punch", 0, 1);
+		return;
+	}
+
 	cli->ac--;
 	cli->av++;
 	tp = cli_dev_get_unit(cli, "PTP", NULL, new_ptp);

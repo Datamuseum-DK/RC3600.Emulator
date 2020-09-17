@@ -25,6 +25,10 @@ PTRDIR = PTR/
 
 default:	nakskov
 
+help:	rc3600
+	./rc3600 \
+		"help" "exit"
+
 test:	rc3600
 	./rc3600 \
 		-T /critter/_36 \

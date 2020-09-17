@@ -139,8 +139,20 @@ cli_elastic_fd(struct elastic *ep, struct cli *cli)
 {
 	int fd;
 
-	AN(ep);
 	AN(cli);
+	if (cli->help) {
+		cli_printf(cli, "\t< <filename>\n");
+		cli_printf(cli, "\t\tRead input from file\n");
+		cli_printf(cli, "\t> <filename>\n");
+		cli_printf(cli, "\t\tWrite output to file\n");
+		cli_printf(cli, "\t>> <filename>\n");
+		cli_printf(cli, "\t\tAppend output to file\n");
+		cli_printf(cli, "\tserial <tty-device>\n");
+		cli_printf(cli, "\t\tConnect to (UNIX) tty-device\n");
+		return(0);
+	}
+
+	AN(ep);
 
 	if (!strcmp(*cli->av, ">") || !strcmp(*cli->av, ">>")) {
 		if (cli_n_args(cli, 1))

@@ -130,6 +130,11 @@ cli_tty(struct cli *cli)
 {
 	struct io_tty *tp;
 
+	if (cli->help) {
+		cli_io_help(cli, "TTI+TTO device pair", 1, 1);
+		return;
+	}
+
 	cli->ac--;
 	cli->av++;
 	tp = cli_dev_get_unit(cli, "TTI", "TTO", new_tty);

@@ -75,6 +75,11 @@ cli_rtc(struct cli *cli)
 {
 	struct iodev *iop;
 
+	if (cli->help) {
+		cli_io_help(cli, "Real Time Clock", 1, 0);
+		return;
+	}
+
 	cli->ac--;
 	cli->av++;
 	iop = cli_dev_get_unit(cli, "RTC", NULL, new_rtc);

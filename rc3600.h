@@ -103,6 +103,7 @@ void rc3600_exec(struct rc3600 *);
 struct cli {
 	struct rc3600		*cs;
 	int			status;
+	int			help;
 	int			ac;
 	char			**av;
 };
@@ -111,6 +112,9 @@ typedef void cli_func_f(struct cli *);
 
 void cli_printf(struct cli *cli, const char *fmt, ...) __printflike(2, 3);
 int cli_error(struct cli *cli, const char *fmt, ...) __printflike(2, 3);
+
+void cli_io_help(struct cli *, const char *desc, int trace, int elastic);
+int cli_alias_help(struct cli *, const char *canonical);
 
 int cli_n_args(struct cli *cli, int n);
 void cli_unknown(struct cli *cli);

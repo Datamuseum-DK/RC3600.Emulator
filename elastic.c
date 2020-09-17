@@ -224,8 +224,19 @@ int v_matchproto_(cli_elastic_f)
 cli_elastic(struct elastic *ep, struct cli *cli)
 {
 
-	AN(ep);
 	AN(cli);
+	if (cli->help) {
+		cli_printf(cli, "<elastic> [arguments]\n");
+		cli_printf(cli, "\t\tElastic buffer arguments\n");
+		cli_printf(cli, "\t<< <string>\n");
+		cli_printf(cli, "\t\tInput <string> + CR into buffer\n");
+		cli_elastic_fd(NULL, cli);
+		cli_elastic_tcp(NULL, cli);
+		cli_elastic_match(NULL, cli);
+		return (0);
+	}
+
+	AN(ep);
 
 	if (!strcmp(*cli->av, "<<")) {
 		if (cli_n_args(cli, 1))

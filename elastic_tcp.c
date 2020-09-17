@@ -213,8 +213,15 @@ int v_matchproto_(cli_elastic_f)
 cli_elastic_tcp(struct elastic *ep, struct cli *cli)
 {
 
-	AN(ep);
 	AN(cli);
+	if (cli->help) {
+		cli_printf(cli, "\ttcp <host>:<port\n");
+		cli_printf(cli, "\t\tConnect to raw TCP socket\n");
+		cli_printf(cli, "\ttelnet [<host>]:<port>\n");
+		cli_printf(cli, "\t\tStart TELNET server\n");
+		return(0);
+	}
+	AN(ep);
 
 	if (!strcmp(*cli->av, "tcp")) {
 		if (cli_n_args(cli, 1))

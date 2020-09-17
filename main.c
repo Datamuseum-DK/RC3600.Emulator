@@ -38,6 +38,7 @@
 #include <unistd.h>
 
 #include "rc3600.h"
+#include "elastic.h"
 #include "vav.h"
 
 void
@@ -280,6 +281,10 @@ show_word(const char *pfx, uint16_t val)
 static void v_matchproto_(cli_func_t)
 cli_stop(struct cli *cli)
 {
+	if (cli->help) {
+		cli_printf(cli, "%s\n\t\tStop the CPU\n", cli->av[0]);
+		return;
+	}
 
 	if (!cli_n_args(cli, 0))
 		cpu_stop(cli->cs);
@@ -289,6 +294,12 @@ static void v_matchproto_(cli_func_t)
 cli_start(struct cli *cli)
 {
 
+	if (cli->help) {
+		cli_printf(cli,
+		    "%s\n\t\tStart the CPU at the current PC\n",
+		    cli->av[0]);
+		return;
+	}
 	if (!cli_n_args(cli, 0))
 		cpu_start(cli->cs);
 }
@@ -296,6 +307,13 @@ cli_start(struct cli *cli)
 static void v_matchproto_(cli_func_t)
 cli_step(struct cli *cli)
 {
+
+	if (cli->help) {
+		if (cli_alias_help(cli, "step"))
+			return;
+		cli_printf(cli, "%s\n\t\tSingle step the CPU\n", cli->av[0]);
+		return;
+	}
 
 	if (!cli_n_args(cli, 0)) {
 		cpu_stop(cli->cs);
@@ -306,6 +324,10 @@ cli_step(struct cli *cli)
 static void v_matchproto_(cli_func_t)
 cli_autoload(struct cli *cli)
 {
+	if (cli->help) {
+		cli_printf(cli, "%s\n\t\tAutoload\n", cli->av[0]);
+		return;
+	}
 
 	if (!cli_n_args(cli, 0)) {
 		cpu_stop(cli->cs);
@@ -321,6 +343,14 @@ static void v_matchproto_(cli_func_t)
 cli_switches(struct cli *cli)
 {
 	int i;
+
+	if (cli->help) {
+		if (cli_alias_help(cli, "switches"))
+			return;
+		cli_printf(cli, "%s [<word>]\n", cli->av[0]);
+		cli_printf(cli, "\t\tSet or read front panel switches\n");
+		return;
+	}
 
 	if (cli->ac > 2) {
 		cli_printf(cli,
@@ -378,11 +408,17 @@ cli_examine(struct cli *cli)
 	const char *fld;
 	uint16_t *dst;
 
-	if (cli->ac != 2) {
+	if (cli->help) {
+		if (cli_alias_help(cli, "examine"))
+			return;
 		cli_printf(cli,
-		    "USAGE %s {ac0|ac1|ac2|ac3|pc|carry|<word>}\n", cli->av[0]);
+		    "%s {ac0|ac1|ac2|ac3|pc|carry|<word>}\n", cli->av[0]);
+		cli_printf(cli, "\t\tExamine value of register or memory\n");
 		return;
 	}
+	if (cli_n_args(cli, 1))
+		return;
+
 	exam_deposit_what(cli, &dst, &fld, cli->av[1]);
 	if (!cli->status)
 		show_word(fld, *dst);
@@ -395,6 +431,17 @@ cli_deposit(struct cli *cli)
 	const char *fld;
 	uint16_t *dst;
 
+	if (cli->help) {
+		if (cli_alias_help(cli, "deposit"))
+			return;
+		cli_printf(cli,
+		    "%s {ac0|ac1|ac2|ac3|pc|carry|<word>} <word>\n",
+		    cli->av[0]);
+		cli_printf(cli, "\t\tDeposit value in register or memory\n");
+		return;
+	}
+	if (cli_n_args(cli, 1))
+		return;
 	if (cli->ac != 3) {
 		cli_printf(cli,
 		    "USAGE %s {ac0|ac1|ac2|ac3|pc|carry|<word>} <word>\n",
@@ -411,10 +458,25 @@ cli_deposit(struct cli *cli)
 	show_word(fld, *dst);
 }
 
-static void v_matchproto_(cli_func_t)
-cli_help(struct cli *cli)
+void
+cli_exit(struct cli *cli)
 {
-	cli_printf(cli, "... I need somebody's...\n");
+	uint16_t w;
+
+	if (cli->help) {
+		cli_printf(cli, "%s [<word>]\n", cli->av[0]);
+		cli_printf(cli,
+		    "\t\tExit emulator with optional return code\n");
+		return;
+	}
+	if (cli->ac == 1)
+		exit(0);
+	if (cli_n_args(cli, 1))
+		return;
+	w = to_word(cli, cli->av[1]);
+	if (cli->status)
+		return;
+	exit(w);
 }
 
 /**********************************************************************/
@@ -444,6 +506,31 @@ cli_error(struct cli *cli, const char *fmt, ...)
 	return (1);
 }
 
+int
+cli_alias_help(struct cli *cli, const char *canonical)
+{
+	if (strcmp(cli->av[0], canonical)) {
+		cli_printf(cli, "%s\t\tAlias for %s\n", cli->av[0], canonical);
+		return (1);
+	}
+	return (0);
+}
+
+void
+cli_io_help(struct cli *cli, const char *desc, int trace, int elastic)
+{
+	cli_printf(cli, "%s [<unit>] [arguments]\n", cli->av[0]);
+	cli_printf(cli, "\t\t%s\n", desc);
+	if (trace) {
+		cli_printf(cli, "\ttrace <word>\n");
+		cli_printf(cli, "\t\tI/O trace level.\n");
+	}
+	if (elastic) {
+		cli_printf(cli, "\t<elastic>\n");
+		cli_printf(cli, "\t\tElastic buffer arguments\n");
+	}
+}
+
 void
 cli_unknown(struct cli *cli)
 {
@@ -464,21 +551,20 @@ cli_n_args(struct cli *cli, int n)
 	    n, cli->av[0]));
 }
 
+static cli_func_f cli_help;
+
 static const struct cli_cmds {
 	const char	*cmd;
 	cli_func_f	*func;
 } cli_cmds[] = {
 	{ "help",	cli_help },
+	{ "exit",	cli_exit },
 	{ "switches",	cli_switches },
-	{ "switch",	cli_switches },
 	{ "examine",	cli_examine },
-	{ "x",		cli_examine },
 	{ "deposit",	cli_deposit },
-	{ "d",		cli_deposit },
 	{ "stop",	cli_stop },
 	{ "start",	cli_start },
 	{ "step",	cli_step },
-	{ "s",		cli_step },
 	{ "autoload",	cli_autoload },
 	// reset
 	// continue (differs from start how ?)
@@ -490,8 +576,41 @@ static const struct cli_cmds {
 	{ "ptr",	cli_ptr },
 	{ "fdd",	cli_fdd },
 	{ "amx",	cli_amx },
+
+	{ "switch",	cli_switches },
+	{ "x",		cli_examine },
+	{ "d",		cli_deposit },
+	{ "?",		cli_help },
 	{ NULL,		NULL },
 };
+
+static void v_matchproto_(cli_func_t)
+cli_help(struct cli *cli)
+{
+	const struct cli_cmds *cc;
+	char *save;
+
+	if (cli->help) {
+		if (cli_alias_help(cli, "help"))
+			return;
+		cli_printf(cli, "%s [<command>]\n", cli->av[0]);
+		cli_printf(cli, "\t\tShow command syntax\n");
+		return;
+	}
+	cli->help = 1;
+	for (cc = cli_cmds; cc->cmd != NULL; cc++) {
+		if (cli->ac > 1 && strcmp(cli->av[1], cc->cmd))
+			continue;
+		save = cli->av[0];
+		cli->av[0] = strdup(cc->cmd);
+		AN(cli->av[0]);
+		cc->func(cli);
+		free(cli->av[0]);
+		cli->av[0] = save;
+	}
+	if (cli->ac == 1 || !strcmp(cli->av[1], "elastic"))
+		cli_elastic(NULL, cli);
+}
 
 static int
 cli_exec(struct rc3600 *cs, const char *s)

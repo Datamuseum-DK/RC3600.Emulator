@@ -129,8 +129,19 @@ int v_matchproto_(cli_elastic_f)
 cli_elastic_match(struct elastic *ep, struct cli *cli)
 {
 
-	AN(ep);
 	AN(cli);
+	if (cli->help) {
+		cli_printf(cli, "\tmatch arm <string>\n");
+		cli_printf(cli, "\t\tStart looking for string\n");
+		cli_printf(cli, "\tmatch wait\n");
+		cli_printf(cli, "\t\tWait for 'arm' to match\n");
+		cli_printf(cli, "\tmatch expect <string>\n");
+		cli_printf(cli, "\t\tShortcut for 'arm' + 'wait'\n");
+		cli_printf(cli, "\tmatch xon\n");
+		cli_printf(cli, "\t\tWait for XON character\n");
+		return (0);
+	}
+	AN(ep);
 
 	if (strcasecmp(*cli->av, "match"))
 		return (0);

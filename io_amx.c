@@ -153,6 +153,13 @@ cli_amx(struct cli *cli)
 	struct io_amx *ap;
 	int port;
 
+	if (cli->help) {
+		cli_io_help(cli, "Asynchronous multiplexor", 1, 0);
+		cli_printf(cli, "\tport <0…7> <elastic>\n");
+		cli_printf(cli, "\t\tPer port elastic buffer arguments\n");
+		return;
+	}
+
 	cli->ac--;
 	cli->av++;
 	ap = cli_dev_get_unit(cli, "AMX", NULL, new_amx);
@@ -176,7 +183,7 @@ cli_amx(struct cli *cli)
 				return;
 			}
 			port = atoi(cli->av[1]);
-			if (port < 0 || port > 7) {
+			if (port < 0 || port >= NCHAN) {
 				cli_error(cli,
 				    "port number out of range [0…7]\n");
 				return;

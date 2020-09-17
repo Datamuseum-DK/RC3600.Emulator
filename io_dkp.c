@@ -360,6 +360,15 @@ cli_dkp(struct cli *cli)
 {
 	struct io_dkp *tp;
 
+	if (cli->help) {
+		cli_io_help(cli, "RC3652 \"Diablo\" disk controller", 0, 0);
+		cli_printf(cli, "\tload <0…3> <filename>\n");
+		cli_printf(cli, "\t\tLoad disk-image from file\n");
+		cli_printf(cli, "\tsave <0…3> <filename>\n");
+		cli_printf(cli, "\t\tSave disk-image to file\n");
+		return;
+	}
+
 	cli->ac--;
 	cli->av++;
 	tp = cli_dev_get_unit(cli, "DKP", NULL, new_dkp);

@@ -92,6 +92,11 @@ cli_ptr(struct cli *cli)
 {
 	struct io_ptr *tp;
 
+	if (cli->help) {
+		cli_io_help(cli, "Paper Tape Reader", 0, 1);
+		return;
+	}
+
 	cli->ac--;
 	cli->av++;
 	tp = cli_dev_get_unit(cli, "PTR", NULL, new_ptr);
