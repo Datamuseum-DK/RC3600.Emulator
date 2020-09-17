@@ -180,7 +180,7 @@ cli_fdd(struct cli *cli)
 	struct io_fdd *fp;
 
 	if (cli->help) {
-		cli_io_help(cli, "RC3650 Floppy disk controller", 0, 0);
+		cli_io_help(cli, "RC3650 Floppy disk controller", 1, 0);
 		cli_printf(cli, "\tload <filename>\n");
 		cli_printf(cli, "\t\tLoad floppy-image from file\n");
 		cli_printf(cli, "\tsave <filename>\n");

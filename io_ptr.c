@@ -38,7 +38,6 @@
 #include "elastic.h"
 
 struct io_ptr {
-	int			speed;
 	struct elastic		*ep;
 	struct iodev		*iop;
 };
@@ -52,8 +51,8 @@ dev_ptr_thread(void *priv)
 	ssize_t sz;
 
 	while (1) {
-		if (tp->speed > 0)
-			usleep(1000000 / tp->speed);
+		if (tp->ep->bits_per_sec > 0)
+			usleep(nsec_per_char(tp->ep) / 1000);
 		sz = elastic_get(tp->ep, buf, 1);
 		assert(sz == 1);
 		trace(iod->cs, "PTR 0x%02x\n", buf[0]);
@@ -79,8 +78,8 @@ new_ptr(struct iodev *iop1, struct iodev *iop2)
 	tp = calloc(1, sizeof *tp);
 	AN(tp);
 	tp->iop = iop1;
-	tp->speed = 2000;
 	tp->ep = elastic_new(tp->iop->cs, O_RDONLY);
+	tp->ep->bits_per_sec = 8 * 2000;
 	AN(tp->ep);
 	tp->iop->priv = tp;
 	install_dev(tp->iop, dev_ptr_thread);
@@ -92,8 +91,7 @@ cli_ptr(struct cli *cli)
 {
 	struct io_ptr *tp;
 
-	if (cli->help) {
-		cli_io_help(cli, "Paper Tape Reader", 0, 1);
+	if (cli->help) { cli_io_help(cli, "Paper Tape Reader", 1, 1);
 		return;
 	}
 
@@ -105,14 +103,8 @@ cli_ptr(struct cli *cli)
 	AN(tp);
 
 	while (cli->ac && !cli->status) {
-		if (!strcasecmp(*cli->av, "speed")) {
-			if (cli_n_args(cli, 1))
-				return;
-			tp->speed = atoi(cli->av[1]);
-			cli->av += 2;
-			cli->ac -= 2;
+		if (cli_dev_trace(tp->iop, cli))
 			continue;
-		}
 		if (cli_elastic(tp->ep, cli))
 			continue;
 		cli_unknown(cli);

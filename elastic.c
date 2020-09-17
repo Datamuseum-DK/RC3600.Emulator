@@ -53,6 +53,7 @@ elastic_new(struct rc3600 *cs, int mode)
 	assert(mode == O_RDONLY || mode == O_RDWR || mode == O_WRONLY);
 	ep->mode = mode;
 	ep->cs = cs;
+	ep->bits_per_char = 8;
 	return (ep);
 }
 
@@ -152,6 +153,14 @@ elastic_inject(struct elastic *ep, const void *ptr, ssize_t len)
 
 /* Driver Interface ***************************************************/
 
+nanosec
+nsec_per_char(const struct elastic *ep)
+{
+
+	AN(ep);
+	return(ep->bits_per_char * 1000000000 / ep->bits_per_sec);
+}
+
 static struct chunk *
 mk_chunk(const void *ptr, ssize_t len)
 {
@@ -228,6 +237,10 @@ cli_elastic(struct elastic *ep, struct cli *cli)
 	if (cli->help) {
 		cli_printf(cli, "<elastic> [arguments]\n");
 		cli_printf(cli, "\t\tElastic buffer arguments\n");
+		cli_printf(cli, "\tcps <characters_per_second>\n");
+		cli_printf(cli, "\t\tOutput bandwidth\n");
+		cli_printf(cli, "\tbaud <baud_rate>\n");
+		cli_printf(cli, "\t\tOutput bandwidth\n");
 		cli_printf(cli, "\t<< <string>\n");
 		cli_printf(cli, "\t\tInput <string> + CR into buffer\n");
 		(void)cli_elastic_fd(NULL, cli);
@@ -237,6 +250,35 @@ cli_elastic(struct elastic *ep, struct cli *cli)
 	}
 
 	AN(ep);
+
+	if (!strcmp(*cli->av, "cps")) {
+		if (cli->ac != 1) {
+			if (cli_n_args(cli, 1))
+				return (1);
+			ep->bits_per_sec =
+			    atoi(cli->av[1]) * ep->bits_per_char;
+			cli->ac--;
+			cli->av++;
+		}
+		cli_printf(cli,
+		    "cps = %jd\n", ep->bits_per_sec / ep->bits_per_char);
+		cli->ac--;
+		cli->av++;
+		return(1);
+	}
+	if (!strcmp(*cli->av, "baud")) {
+		if (cli->ac != 1) {
+			if (cli_n_args(cli, 1))
+				return (1);
+			ep->bits_per_sec = atoi(cli->av[1]);
+			cli->ac--;
+			cli->av++;
+		}
+		cli_printf(cli, "baud = %jd\n", ep->bits_per_sec);
+		cli->ac--;
+		cli->av++;
+		return(1);
+	}
 
 	if (!strcmp(*cli->av, "<<")) {
 		if (cli_n_args(cli, 1))

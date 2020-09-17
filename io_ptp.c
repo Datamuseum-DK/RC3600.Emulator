@@ -38,7 +38,6 @@
 #include "elastic.h"
 
 struct io_ptp {
-	int			speed;
 	struct elastic		*ep;
 	struct iodev		*iop;
 };
@@ -60,8 +59,8 @@ dev_ptp_thread(void *priv)
 		trace(iod->cs, "PTP 0x%02x\n", u);
 		buf[0] = u;
 		elastic_put(tp->ep, buf, 1);
-		if (tp->speed > 0)
-			usleep(1000000 / tp->speed);
+		if (tp->ep->bits_per_sec > 0)
+			usleep(nsec_per_char(tp->ep) / 1000);
 		AZ(pthread_mutex_lock(&iod->mtx));
 		iod->busy = 0;
 		iod->done = 1;
@@ -79,8 +78,8 @@ new_ptp(struct iodev *iop1, struct iodev *iop2)
 	tp = calloc(1, sizeof *tp);
 	AN(tp);
 	tp->iop = iop1;
-	tp->speed = 1000;
 	tp->ep = elastic_new(tp->iop->cs, O_WRONLY);
+	tp->ep->bits_per_sec = 8 * 1000;
 	AN(tp->ep);
 	tp->iop->priv = tp;
 	install_dev(tp->iop, dev_ptp_thread);
@@ -93,7 +92,7 @@ cli_ptp(struct cli *cli)
 	struct io_ptp *tp;
 
 	if (cli->help) {
-		cli_io_help(cli, "Paper Tape Punch", 0, 1);
+		cli_io_help(cli, "Paper Tape Punch", 1, 1);
 		return;
 	}
 
@@ -105,14 +104,8 @@ cli_ptp(struct cli *cli)
 	AN(tp);
 
 	while (cli->ac && !cli->status) {
-		if (!strcasecmp(*cli->av, "speed")) {
-			if (cli_n_args(cli, 1))
-				return;
-			tp->speed = atoi(cli->av[1]);
-			cli->av += 2;
-			cli->ac -= 2;
+		if (cli_dev_trace(tp->iop, cli))
 			continue;
-		}
 		if (cli_elastic(tp->ep, cli))
 			continue;
 		cli_unknown(cli);

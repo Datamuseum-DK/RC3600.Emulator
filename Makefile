@@ -38,7 +38,7 @@ test:	rc3600
 		'ptr 0' \
 		'dkp 0 load 0 /home/phk/DDHF/DDHF/Rc3600/DKP/011/__' \
 		'switch 0000073' \
-		'tty speed 9600' \
+		'tty baud 9600' \
 		'tty match arm "SYSTEM:"' \
 		'autoload' \
 		'tty match wait' \
@@ -49,7 +49,7 @@ nakskov: rc3600
 	./rc3600 \
 		-T /critter/_36 \
 		'tty trace 1' \
-		'tty speed 9600' \
+		'tty baud 9600' \
 		'tty telnet :2000' \
 		'ptp 0' \
 		'ptr 0' \
@@ -103,7 +103,7 @@ co040:	rc3600
 		'amx port 3 telnet :2103' \
 		"fdd 0 load ${FDDIR}/_sg0113.flp" \
 		'switch 0000061' \
-		'tty speed 110' \
+		'tty baud 110' \
 		'autoload' \
 		'tty match xon ' \
 		'tty << "BOOT CO040"' \
@@ -132,7 +132,7 @@ rc6000:	rc3600
 		'tty telnet localhost:2100' \
 		'dkp 0 load 0 /home/phk/DDHF/DDHF/Rc3600/DKP/000/__' \
 		'switch 0000073' \
-		'tty speed 9600' \
+		'tty baud 9600' \
 		'autoload' \
 		2>&1 | tee /critter/_3
 
@@ -143,7 +143,7 @@ test2:	rc3600
 		'ptr 0' \
 		'dkp 0' \
 		'switch 0000073' \
-		'tty speed 9600' \
+		'tty baud 9600' \
 		'tty match arm "SYSTEM:"' \
 		'autoload' \
 		'tty match wait' \
@@ -159,9 +159,8 @@ test2:	rc3600
 
 timer:	rc3600
 	./rc3600 \
-		'ptr 0' \
 		'tty telnet :2100' \
-		'tty speed 9600' \
+		'tty baud 9600' \
 		'switch 0000012' \
 		'ptr 0 < ${PTRDIR}/RCSL_44_RT_1558_RC3600_INSTRUCTION_TIMER_TEST.bin' \
 		'tty match arm "STARTADDR   400 ?  "' \

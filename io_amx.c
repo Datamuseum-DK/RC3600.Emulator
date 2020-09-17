@@ -140,6 +140,8 @@ new_amx(struct iodev *iop, struct iodev *iop2)
 	for (i = 0; i < NCHAN; i++) {
 		ap->ep[i] = elastic_new(ap->iop->cs, O_RDWR);
 		AN(ap->ep[i]);
+		ap->ep[i]->bits_per_char = 11;
+		ap->ep[i]->bits_per_sec = 9600;
 	}
 	ap->iop->ins_func = dev_amx_insfunc;
 	ap->iop->priv = ap;
@@ -169,14 +171,6 @@ cli_amx(struct cli *cli)
 	while (cli->ac && !cli->status) {
 		if (cli_dev_trace(ap->iop, cli))
 			continue;
-		if (!strcasecmp(*cli->av, "speed")) {
-			if (cli_n_args(cli, 1))
-				return;
-			ap->speed = atoi(cli->av[1]);
-			cli->av += 2;
-			cli->ac -= 2;
-			continue;
-		}
 		if (!strcasecmp(*cli->av, "port")) {
 			if (cli->ac < 2) {
 				(void)cli_n_args(cli, 1);

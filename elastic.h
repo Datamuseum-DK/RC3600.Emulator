@@ -57,6 +57,8 @@ struct elastic {
 	TAILQ_HEAD(,chunk)		chunks_out;
 	TAILQ_HEAD(,chunk)		chunks_in;
 	int				mode;
+	nanosec				bits_per_char;
+	nanosec				bits_per_sec;
 	pthread_mutex_t			mtx;
 	pthread_cond_t			cond_in;
 	pthread_cond_t			cond_out;
@@ -65,6 +67,7 @@ struct elastic {
 };
 
 struct elastic *elastic_new(struct rc3600 *, int mode);
+nanosec nsec_per_char(const struct elastic *ep);
 
 struct elastic_subscriber *elastic_subscribe(struct elastic *ep, elastic_deliver_f *, void *);
 void elastic_unsubscribe(struct elastic *ep, struct elastic_subscriber *);
