@@ -35,6 +35,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <termios.h>
 
 #include "rc3600.h"
 #include "elastic.h"
@@ -97,6 +98,42 @@ elastic_fd_use(struct elastic *ep, int fd, int mode)
 		AZ(pthread_create(&efp->rxt, NULL, elastic_fd_rxthread, efp));
 }
 
+static void
+elastic_serial(struct elastic *ep, struct cli *cli)
+{
+	int fd;
+	struct termios tt;
+
+	if (cli->ac < 2) {
+		(void)cli_n_args(cli, 1);
+		return;
+	}
+
+	fd = open(cli->av[1], O_RDWR);
+	if (fd < 0) {
+		cli_error(cli, "Cannot open %s: %s\n",
+		    cli->av[1], strerror(errno));
+		return;
+	}
+	if (tcgetattr(fd, &tt)) {
+		cli_error(cli, "Not a tty %s: %s\n",
+		    cli->av[1], strerror(errno));
+		AZ(close(fd));
+		return;
+	}
+	cfmakeraw(&tt);
+	tt.c_cflag |= CLOCAL;
+	tt.c_cc[VMIN] = 1;
+	tt.c_cc[VTIME] = 0;
+	cli->ac -= 2;
+	cli->av += 2;
+	while (cli->ac > 0) {
+		cli_unknown(cli);
+	}
+	assert(tcsetattr(fd, TCSAFLUSH, &tt) == 0);
+	elastic_fd_use(ep, fd, -1);
+}
+
 int v_matchproto_(cli_elastic_f)
 cli_elastic_fd(struct elastic *ep, struct cli *cli)
 {
@@ -141,6 +178,10 @@ cli_elastic_fd(struct elastic *ep, struct cli *cli)
 		elastic_fd_use(ep, fd, O_RDONLY);
 		cli->av += 2;
 		cli->ac -= 2;
+		return (1);
+	}
+	if (!strcmp(*cli->av, "serial")) {
+		elastic_serial(ep, cli);
 		return (1);
 	}
 	return (0);

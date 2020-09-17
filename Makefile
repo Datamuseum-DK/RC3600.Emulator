@@ -45,12 +45,13 @@ nakskov: rc3600
 	./rc3600 \
 		-T /critter/_36 \
 		'tty trace 1' \
-		'tty speed 110' \
+		'tty speed 9600' \
 		'tty telnet :2000' \
 		'ptp 0' \
 		'ptr 0' \
 		"dkp 0 load 0 ${DKPDIR}/dkp_011.bin" \
 		'amx port 0 telnet :2100' \
+		'amx port 0 serial /dev/nmdm7A' \
 		'amx port 1 telnet :2101' \
 		'amx port 2 telnet :2102' \
 		'amx port 3 telnet :2103' \
