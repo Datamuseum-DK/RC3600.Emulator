@@ -51,7 +51,7 @@ trace_state(struct rc3600 *cs)
 		return;
 	bprintf(buf,
 	    "I %jd %d %04x %04x %06o  %04x %04x %04x %04x %c"
-	    // " s%.6f r%.6f d%.6f"
+	    " s%.6f r%.6f d%.6f"
 	    " w%8ju %s\n",
 	    cs->ins_count,
 	    cs->inten[0],
@@ -63,9 +63,9 @@ trace_state(struct rc3600 *cs)
 	    cs->acc[2],
 	    cs->acc[3],
 	    cs->carry ? 'C' : '.',
-	    // cs->sim_time * 1e-9,
-	    // cs->real_time * 1e-9,
-	    // (cs->sim_time - cs->real_time) * 1e-9,
+	    cs->sim_time * 1e-9,
+	    cs->real_time * 1e-9,
+	    (cs->sim_time - cs->real_time) * 1e-9,
 	    cs->ins_count - cs->last_core,
 	    core_disass(cs, cs->pc)
 	);
@@ -176,8 +176,11 @@ cpu_thread(void *priv)
 	struct rc3600 *cs = priv;
 	struct iodev *iop;
 	int time_step;
+	int iter = 0;
 	nanosec pace;
 	nanosec next_tmo;
+	nanosec dt;
+	nanosec zzz;
 	struct timespec ts;
 
 	AZ(pthread_mutex_lock(&cs->run_mtx));
@@ -187,13 +190,15 @@ cpu_thread(void *priv)
 			AZ(pthread_cond_wait(&cs->run_cond, &cs->run_mtx));
 		AZ(pthread_mutex_lock(&cs->running_mtx));
 		cs->real_time = now();
+if (0) {
 		if (time_step)
 			cs->sim_time = cs->real_time;
+}
 
 		next_tmo = 0;
 		iop = intr_pending(cs);
 		AZ(pthread_mutex_unlock(&cs->run_mtx));
-		callout_poll(cs);
+		next_tmo = callout_poll(cs);
 		if (iop != NULL) {
 			dev_trace(iop, "INTERRUPT %s 0x%02x\n",
 			    iop->name, iop->unit);
@@ -209,32 +214,30 @@ cpu_thread(void *priv)
 
 		AZ(pthread_mutex_unlock(&cs->running_mtx));
 		pace = 0;
-if (0) {
-		if (cs->pc < 0x100 && core_read(cs, cs->pc, CORE_NULL) == cs->pc) {
-			if (cs->ins_count - cs->last_core < 590)
-				cs->last_core = cs->ins_count - 590;
+		if (cs->pc < 0x100 &&
+		    core_read(cs, cs->pc, CORE_NULL) == cs->pc) {
+			if (++iter > 3)
+				pace = 100000000;
+		} else if (cs->sim_time > cs->real_time + 1000000) {
+			// pace = 1000000;
+		} else {
+			iter = 0;
 		}
-		if (cs->ins_count - cs->last_core > 600 && next_tmo > 0)
-			pace = next_tmo - cs->real_time;
-		else if (cs->ins_count - cs->last_core > 600)
-			pace = 1000000;
-		else if (cs->sim_time > cs->real_time + 1000000)
-			pace = 1000000;
-		else
-			pace = 0;
-		if (pace)
-			trace(cs, "Pace %jd %jd\n", pace, next_tmo);
-} else {
-		if (cs->sim_time > cs->real_time + 1000000)
-			pace = 1000000;
-}
+		if (next_tmo > 0) {
+			dt = next_tmo;
+			dt -= cs->sim_time;
+			if (dt > 1000000 && dt < pace)
+				pace = dt;
+			else if (dt < 0)
+				pace = 0;
+		}
 		AZ(pthread_mutex_lock(&cs->run_mtx));
 		if (pace > 0) {
-			pace += cs->real_time;
-			ts.tv_sec = pace / 1000000000;
-			ts.tv_nsec = pace % 1000000000;
+			zzz = pace + now();
+			ts.tv_sec = zzz / 1000000000;
+			ts.tv_nsec = zzz % 1000000000;
 			(void)pthread_cond_timedwait(&cs->wait_cond, &cs->run_mtx, &ts);
-			// cs->sim_time = now();
+			cs->sim_time += pace;
 			cs->last_core = cs->ins_count;
 		}
 

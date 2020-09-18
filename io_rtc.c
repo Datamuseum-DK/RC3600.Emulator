@@ -33,7 +33,45 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <time.h>
 #include "rc3600.h"
+
+static void *
+dev_rtc_thread(void *priv)
+{
+	struct iodev *iop = priv;
+	uint16_t u;
+	struct timespec ts;
+	nanosec r, nsec;
+
+	AN(iop);
+	AZ(pthread_mutex_lock(&iop->mtx));
+	while (1) {
+		while (!iop->busy)
+			AZ(pthread_cond_wait(&iop->cond, &iop->mtx));
+		u = iop->oreg_a;
+		switch (u & 3) {
+		case 0x0: r = 1000000000 / 50; break;
+		case 0x1: r = 1000000000 / 10; break;
+		case 0x2: r = 1000000000 / 100; break;
+		case 0x3: r = 1000000000 / 1000; break;
+		default: assert(0 == __LINE__);
+		}
+		AZ(clock_gettime(CLOCK_REALTIME, &ts));
+		nsec = ts.tv_sec * 1000000000L + ts.tv_nsec;
+		nsec /= r;
+		nsec += 1;
+		nsec *= r;
+		ts.tv_nsec = nsec % 1000000000;
+		ts.tv_sec = nsec / 1000000000;
+		(void)pthread_cond_timedwait(&iop->cond, &iop->mtx, &ts);
+		if (iop->busy) {
+			iop->busy = 0;
+			iop->done = 1;
+			intr_raise(iop);
+		}
+	}
+}
 
 static void
 dev_rtc_iofunc(struct iodev *iop, uint16_t ioi, uint16_t *reg)
@@ -65,8 +103,13 @@ new_rtc(struct iodev *iop1, struct iodev *iop2)
 
 	AN(iop1);
 	AZ(iop2);
-	iop1->ins_func = dev_rtc_iofunc;
-	install_dev(iop1, NULL);
+	if (0) {
+		iop1->ins_func = dev_rtc_iofunc;
+		install_dev(iop1, NULL);
+	} else {
+		install_dev(iop1, dev_rtc_thread);
+	}
+	iop1->priv = iop1;
 	return (iop1);
 }
 

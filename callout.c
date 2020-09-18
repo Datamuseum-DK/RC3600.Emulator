@@ -93,10 +93,10 @@ callout_wake_dev_rel(struct iodev *iop, nanosec when)
 	co->cs = iop->cs;
 	AZ(pthread_mutex_lock(&co->cs->run_mtx));
 	co->when = when + co->cs->sim_time;
+	AZ(pthread_mutex_unlock(&co->cs->run_mtx));
 	co->priv = iop;
 	co->how = &callout_wake_dev_how;
 	callout_insert(co);
-	AZ(pthread_mutex_unlock(&co->cs->run_mtx));
 	return (co);
 }
 
@@ -158,31 +158,35 @@ callout_dev_is_done(struct iodev *iop, nanosec when)
 	co->cs = iop->cs;
 	AZ(pthread_mutex_lock(&co->cs->run_mtx));
 	co->when = when + co->cs->sim_time;
+	AZ(pthread_mutex_unlock(&co->cs->run_mtx));
 	co->priv = iop;
 	co->how = &callout_dev_is_done_how;
 	callout_insert(co);
-	AZ(pthread_mutex_unlock(&co->cs->run_mtx));
 }
 
 /**********************************************************************/
 
 #include <stdio.h>
 
-void
+nanosec
 callout_poll(struct rc3600 *cs)
 {
 	struct callout *co;
+	nanosec rv = 0;
 
 	while (1) {
 		AZ(pthread_mutex_lock(&cs->callout_mtx));
 		co = TAILQ_FIRST(&cs->callouts);
-		if (co != NULL && co->when < cs->sim_time)
+		if (co != NULL && co->when < cs->sim_time) {
 			TAILQ_REMOVE(&cs->callouts, co, next);
-		else
+		} else {
+			if (co != NULL)
+				rv = co->when;
 			co = NULL;
+		}
 		AZ(pthread_mutex_unlock(&cs->callout_mtx));
 		if (co == NULL)
-			return;
+			return (rv);
 		co->how->func(co);
 		free(co);
 	}

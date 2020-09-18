@@ -188,6 +188,7 @@ do_xfer(struct iodev *iop, struct io_dkp *tp, int do_read)
 
 		tp->nsec++;
 		tp->nsec &= 0xf;
+		AZ(pthread_cond_signal(&iop->cs->wait_cond));
 
 	} while(tp->nsec);
 	//printf("DKP %s DONE\n", read ? "READ" : "WRITE");
@@ -203,7 +204,7 @@ do_xfer(struct iodev *iop, struct io_dkp *tp, int do_read)
 		tp->core_adr += 2;
 
 	AZ(pthread_mutex_unlock(&iop->mtx));
-	callout_dev_sleep(iop, 100000);
+	callout_dev_sleep(iop, 1000000);
 }
 
 static void*

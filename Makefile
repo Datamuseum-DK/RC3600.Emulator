@@ -32,8 +32,10 @@ help:	rc3600
 test:	rc3600
 	./rc3600 \
 		-T /critter/_36 \
+		'rtc 0' \
+		'rtc trace 0' \
 		'tty telnet :2100' \
-		'tty trace 1' \
+		'tty trace 0' \
 		'ptp > _ptp' \
 		'ptr 0' \
 		'dkp 0 load 0 /home/phk/DDHF/DDHF/Rc3600/DKP/011/__' \

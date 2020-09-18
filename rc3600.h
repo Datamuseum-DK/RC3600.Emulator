@@ -177,7 +177,7 @@ void callout_dev_sleep(struct iodev *, nanosec);
 void callout_dev_is_done(struct iodev *iop, nanosec when);
 void callout_dev_is_done_abs(struct iodev *iop, nanosec when);
 
-void callout_poll(struct rc3600 *cs);
+nanosec callout_poll(struct rc3600 *cs);
 
 /* IO device interface ************************************************/
 

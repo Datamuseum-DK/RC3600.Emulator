@@ -302,7 +302,7 @@ std_io_ins(struct iodev *iop, uint16_t ioi, uint16_t *reg)
 	default:
 		break;
 	}
-	if (iop->trace > 1 && !iop->cs->do_trace)
+	if (iop->trace > 1)
 		trace_state(iop->cs);
 }
 
