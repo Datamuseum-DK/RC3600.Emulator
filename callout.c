@@ -83,22 +83,7 @@ callout_insert(struct callout *co)
 	AZ(pthread_mutex_unlock(&co->cs->callout_mtx));
 }
 
-struct callout *
-callout_wake_dev_abs(struct iodev *iop, nanosec when)
-{
-	struct callout *co;
-
-	co = calloc(sizeof *co, 1);
-	AN(co);
-	co->cs = iop->cs;
-	co->when = when;
-	co->priv = iop;
-	co->how = &callout_wake_dev_how;
-	callout_insert(co);
-	return (co);
-}
-
-struct callout *
+static struct callout *
 callout_wake_dev_rel(struct iodev *iop, nanosec when)
 {
 	struct callout *co;

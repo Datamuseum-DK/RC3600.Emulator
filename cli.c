@@ -41,6 +41,8 @@
 #include "elastic.h"
 #include "vav.h"
 
+static int cli_alias_help(struct cli *cli, const char *canonical);
+
 /**********************************************************************/
 
 int
@@ -260,7 +262,7 @@ cli_deposit(struct cli *cli)
 	show_word(fld, *dst);
 }
 
-void
+static void
 cli_exit(struct cli *cli)
 {
 	uint16_t w;
@@ -308,7 +310,7 @@ cli_error(struct cli *cli, const char *fmt, ...)
 	return (1);
 }
 
-int
+static int
 cli_alias_help(struct cli *cli, const char *canonical)
 {
 	if (strcmp(cli->av[0], canonical)) {

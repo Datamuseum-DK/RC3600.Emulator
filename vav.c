@@ -47,7 +47,7 @@
 #include "rc3600.h"
 #include "vav.h"
 
-int
+static int
 VAV_BackSlash(const char *s, char *res)
 {
 	int r;
@@ -103,7 +103,7 @@ VAV_BackSlash(const char *s, char *res)
 	return (r);
 }
 
-char *
+static char *
 VAV_BackSlashDecode(const char *s, const char *e)
 {
 	const char *q;

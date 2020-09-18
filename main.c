@@ -104,7 +104,7 @@ dev_trace(const struct iodev *iop, const char *fmt, ...)
 
 /**********************************************************************/
 
-nanosec
+static nanosec
 now(void)
 {
 	struct timespec ts;

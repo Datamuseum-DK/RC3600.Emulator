@@ -121,7 +121,6 @@ void cli_printf(struct cli *cli, const char *fmt, ...) __printflike(2, 3);
 int cli_error(struct cli *cli, const char *fmt, ...) __printflike(2, 3);
 
 void cli_io_help(struct cli *, const char *desc, int trace, int elastic);
-int cli_alias_help(struct cli *, const char *canonical);
 
 int cli_n_args(struct cli *cli, int n);
 void cli_unknown(struct cli *cli);
@@ -174,8 +173,6 @@ uint16_t intr_inta(struct rc3600 *cs);
 
 /* Callout ************************************************************/
 
-struct callout *callout_wake_dev_abs(struct iodev *, nanosec);
-struct callout *callout_wake_dev_rel(struct iodev *, nanosec);
 void callout_dev_sleep(struct iodev *, nanosec);
 void callout_dev_is_done(struct iodev *iop, nanosec when);
 void callout_dev_is_done_abs(struct iodev *iop, nanosec when);
@@ -226,9 +223,7 @@ struct iodev {
 	uint16_t		oreg_c;
 
 
-	nanosec			sleep_until;
 	pthread_cond_t		sleep_cond;
-	TAILQ_ENTRY(iodev)	sleep_list;
 };
 
 #define	NIO		0x6000
@@ -304,8 +299,6 @@ struct ins_timing {
 
 extern const struct ins_timing * const ins_timings[];
 int ins_timing_check(void);
-
-nanosec now(void);
 
 /* AUTOROM ************************************************************/
 
