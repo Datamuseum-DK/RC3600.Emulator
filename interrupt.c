@@ -116,7 +116,7 @@ intr_inta(struct rc3600 *cs)
 	AZ(pthread_mutex_lock(&cs->run_mtx));
 	iop = TAILQ_FIRST(&cs->irq_list);
 	if (iop != NULL)
-		rv = iop->unit;
+		rv = iop->devno;
 	AZ(pthread_mutex_unlock(&cs->run_mtx));
 	return (rv);
 }

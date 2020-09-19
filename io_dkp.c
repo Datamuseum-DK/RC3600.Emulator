@@ -86,7 +86,7 @@ dev_dkp_iofunc(struct iodev *iop, uint16_t ioi, uint16_t *reg)
 	if (IO_ACTION(ioi) == IO_START)
 		clrall = 1;
 
-	if (IO_OPER(ioi) == DOA && *reg & 0x8000) {
+	if (IO_OPER(ioi) == IO_DOA && *reg & 0x8000) {
 		clrstatus = 1;
 		iop->ireg_a &= ~(*reg & 0xf800);
 	}
@@ -110,22 +110,22 @@ dev_dkp_iofunc(struct iodev *iop, uint16_t ioi, uint16_t *reg)
 		intr_lower(iop);
 
 	switch(IO_OPER(ioi)) {
-	case DOA:
+	case IO_DOA:
 		tp->cyl = *reg & 0xff;
 		break;
-	case DOB:
+	case IO_DOB:
 		tp->core_adr = *reg;
 		break;
-	case DOC:
+	case IO_DOC:
 		tp->drv = *reg >> 14;
 		tp->hd = (*reg >> 8) & 0x3f;
 		tp->sec = (*reg >> 4) & 0xf;
 		tp->nsec = *reg & 0xf;
 		break;
-	case DIB:
+	case IO_DIB:
 		*reg = tp->core_adr;
 		break;
-	case DIC:
+	case IO_DIC:
 		AZ(tp->hd & ~0x3f);
 		AZ(tp->sec & ~0xf);
 		AZ(tp->nsec & ~0xf);
@@ -301,7 +301,7 @@ new_dkp(struct iodev *iop1, struct iodev *iop2)
 	tp = calloc(1, sizeof *tp);
 	AN(tp);
 	tp->iop = iop1;
-	tp->iop->ins_func = dev_dkp_iofunc;
+	tp->iop->io_func = dev_dkp_iofunc;
 	new_drive(tp->iop, 0, &tp->drive[0]);
 	new_drive(tp->iop, 1, &tp->drive[1]);
 	new_drive(tp->iop, 2, &tp->drive[2]);

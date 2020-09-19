@@ -70,6 +70,7 @@ struct rc3600 {
 	uint16_t		ins;		/* Current instruction */
 	nanosec			duration;	/* Duration of instruction */
 	struct iodev		*iodevs[64];
+	struct iodev		*nodev;
 	const struct ins_timing	*timing;
 
 	struct core		*core;
@@ -79,7 +80,6 @@ struct rc3600 {
 
 	uint16_t		imask;
 	uint16_t		inten[3];
-	TAILQ_HEAD(, iodev)	units_list;	/* get_dev_unit */
 	TAILQ_HEAD(, iodev)	irq_list;
 	TAILQ_HEAD(, iodev)	masked_irq_list;
 
@@ -181,10 +181,14 @@ nanosec callout_poll(struct rc3600 *cs);
 
 /* IO device interface ************************************************/
 
-typedef void iodev_init_f(struct iodev *);
-typedef void iodev_ins_f(struct iodev *, uint16_t ioi, uint16_t *reg);
+void iodev_init(struct rc3600 *);
 
-iodev_ins_f std_io_ins;
+typedef void iodev_init_f(struct iodev *);
+typedef void iodev_io_f(struct iodev *, uint16_t ioi, uint16_t *reg);
+typedef void iodev_skp_f(struct iodev *, uint16_t ioi);
+
+iodev_io_f std_io_ins;
+iodev_skp_f std_skp_ins;
 
 typedef void *iodev_thr(void *);
 
@@ -199,12 +203,13 @@ struct iodev {
 	char			name[6];
 	struct rc3600		*cs;
 	iodev_init_f		*init_func;
-	iodev_ins_f		*ins_func;
+	iodev_io_f		*io_func;
+	iodev_skp_f		*skp_func;
 	void			*priv;		/* private (instance) data */
 	uint8_t			busy;		/* I/O bit */
 	uint8_t			done;		/* I/O bit */
 	uint8_t			pulse;		/* I/O bit */
-	uint8_t			unit;		/* Device number [0...63] */
+	unsigned		devno;		/* Device number [0...63] */
 
 	uint8_t			imask;		/* Bit in interrupt mask */
 	uint8_t			ipen;		/* Interrupt Pending */
@@ -226,40 +231,22 @@ struct iodev {
 	pthread_cond_t		sleep_cond;
 };
 
-#define	NIO		0x6000
-#define	NIOS		0x6040
-#define	NIOC		0x6080
-#define	NIOP		0x60c0
-#define	DIA		0x6100
-#define	DIAS		0x6140
-#define	DIAC		0x6180
-#define	DIAP		0x61c0
-#define	DOA		0x6200
-#define	DOAS		0x6240
-#define	DOAC		0x6280
-#define	DOAP		0x62c0
-#define	DIB		0x6300
-#define	DIBS		0x6340
-#define	DIBC		0x6380
-#define	DIBP		0x63c0
-#define	DOB		0x6400
-#define	DOBS		0x6440
-#define	DOBC		0x6480
-#define	DOBP		0x64c0
-#define	DIC		0x6500
-#define	DICS		0x6540
-#define	DICC		0x6580
-#define	DICP		0x65c0
-#define	DOC		0x6600
-#define	DOCS		0x6640
-#define	DOCC		0x6680
-#define	DOCP		0x66c0
-#define	SKPBN		0x6700 /* Not dispatched to driver */
-#define	SKPBZ		0x6740 /* Not dispatched to driver */
-#define	SKPDN		0x6780 /* Not dispatched to driver */
-#define	SKPDZ		0x67c0 /* Not dispatched to driver */
+#define IO_MAXDEV	0x3f
 
-#define IO_ACTION(x)	(IO_OPER(x) >= SKPBN ? 0 : (x) & 0x00c0)
+#define	IO_NIO		0x6000
+#define	IO_DIA		0x6100
+#define	IO_DOA		0x6200
+#define	IO_DIB		0x6300
+#define	IO_DOB		0x6400
+#define	IO_DIC		0x6500
+#define	IO_DOC		0x6600
+#define	IO_SKP		0x6700
+#define	IO_SKPBN	0x6700
+#define	IO_SKPBZ	0x6740
+#define	IO_SKPDN	0x6780
+#define	IO_SKPDZ	0x67c0
+
+#define IO_ACTION(x)	(IO_OPER(x) >= IO_SKP ? 0 : (x) & 0x00c0)
 #define IO_START	0x0040
 #define IO_CLEAR	0x0080
 #define IO_PULSE	0x00c0

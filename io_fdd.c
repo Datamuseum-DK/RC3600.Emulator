@@ -62,11 +62,11 @@ dev_fdd_iofunc(struct iodev *iop, uint16_t ioi, uint16_t *reg)
 
 	fp = iop->priv;
 
-	if (IO_OPER(ioi) == DIB) {
+	if (IO_OPER(ioi) == IO_DIB) {
 		*reg = fp->img[fp->r_ptr++];
 		return;
 	}
-	if (IO_OPER(ioi) == DOB) {
+	if (IO_OPER(ioi) == IO_DOB) {
 		fp->wbuf[fp->w_ptr] = *reg;
 		if (fp->w_ptr < FDD_BPS)
 			fp->w_ptr++;
@@ -134,7 +134,7 @@ new_fdd(struct iodev *iop1, struct iodev *iop2)
 	fp->iop = iop1;
 	fp->speed = 10000;
 
-	fp->iop->ins_func = dev_fdd_iofunc;
+	fp->iop->io_func = dev_fdd_iofunc;
 	fp->iop->priv = fp;
 	install_dev(fp->iop, NULL);
 	return (fp);

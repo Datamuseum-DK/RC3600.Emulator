@@ -39,7 +39,6 @@
 
 #include "rc3600.h"
 #include "elastic.h"
-#include "vav.h"
 
 void
 trace_state(struct rc3600 *cs)
@@ -123,16 +122,20 @@ install_dev(struct iodev *iop, iodev_thr *thr)
 	AN(iop);
 	cs = iop->cs;
 	AN(cs);
-	AN(iop->unit);
-	AZ(cs->iodevs[iop->unit]);
+	AN(iop->devno);
+	assert(cs->iodevs[iop->devno] == cs->nodev);
 	AN(iop->imask);
 	AZ(pthread_mutex_init(&iop->mtx, NULL));
 	AZ(pthread_cond_init(&iop->cond, NULL));
 	AZ(pthread_cond_init(&iop->sleep_cond, NULL));
 	iop->cs = cs;
+	if (iop->io_func == NULL)
+		iop->io_func = std_io_ins;
+	if (iop->skp_func == NULL)
+		iop->skp_func = std_skp_ins;
 	if (thr != NULL)
 		AZ(pthread_create(&iop->thread, NULL, thr, iop));
-	cs->iodevs[iop->unit] = iop;
+	cs->iodevs[iop->devno] = iop;
 }
 
 /**********************************************************************/
@@ -201,7 +204,7 @@ if (0) {
 		next_tmo = callout_poll(cs);
 		if (iop != NULL) {
 			dev_trace(iop, "INTERRUPT %s 0x%02x\n",
-			    iop->name, iop->unit);
+			    iop->name, iop->devno);
 			core_write(cs, 0, cs->pc, CORE_WRITE);
 			cs->pc = core_read(cs, 1, CORE_READ | CORE_INDIR);
 		}
@@ -262,6 +265,8 @@ cpu_new(void)
 	cs->core_size = 0x8000;
 	cs->core = core_new(cs->core_size);
 
+	iodev_init(cs);
+
 	iodev_cpu.cs = cs;
 	cs->iodevs[0x3f] = &iodev_cpu;
 
@@ -273,7 +278,6 @@ cpu_new(void)
 
 	TAILQ_INIT(&cs->irq_list);
 	TAILQ_INIT(&cs->masked_irq_list);
-	TAILQ_INIT(&cs->units_list);
 	TAILQ_INIT(&cs->callouts);
 	cs->fd_trace = -1;
 

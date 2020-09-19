@@ -34,8 +34,34 @@
 #include <string.h>
 #include "rc3600.h"
 
-static void
-dev_cpu_ins(struct iodev *iop, uint16_t ioi, uint16_t *reg)
+static void v_matchproto_(iodev_io_f)
+dev_cpu_skp_ins(struct iodev *iop, uint16_t ioi)
+{
+	struct rc3600 *cs;
+
+	cs = iop->cs;
+
+	switch (ioi) {
+	case IO_SKPBN:
+		if (cs->inten[0])
+			cs->npc++;
+		break;
+	case IO_SKPBZ:
+		if (!cs->inten[0])
+			cs->npc++;
+		break;
+	case IO_SKPDN:
+		break;
+	case IO_SKPDZ:
+		cs->npc++;
+		break;
+	default:
+		break;
+	}
+}
+
+static void v_matchproto_(iodev_io_f)
+dev_cpu_io_ins(struct iodev *iop, uint16_t ioi, uint16_t *reg)
 {
 	unsigned u;
 	struct rc3600 *cs;
@@ -43,26 +69,6 @@ dev_cpu_ins(struct iodev *iop, uint16_t ioi, uint16_t *reg)
 	cs = iop->cs;
 
 	// printf("IO_CPU: INS 0x%04x 0x%04x\n", cs->ins, ioi);
-
-	switch (ioi) {
-	case SKPBN:
-		if (iop->cs->inten[0])
-			iop->cs->npc++;
-		return;
-	case SKPBZ:
-		if (!iop->cs->inten[0])
-			iop->cs->npc++;
-		return;
-	case SKPDN:
-		return;
-		break;
-	case SKPDZ:
-		iop->cs->npc++;
-		return;
-		break;
-	default:
-		break;
-	}
 
 	switch (IO_ACTION(ioi)) {
 	case IO_START:
@@ -76,37 +82,36 @@ dev_cpu_ins(struct iodev *iop, uint16_t ioi, uint16_t *reg)
 	}
 
 	switch (IO_OPER(ioi)) {
-	case NIO:
+	case IO_SKP:
+		assert(0 == __LINE__);
+		break;
+	case IO_NIO:
 		// INTEN/INTDS
 		break;
-	case DIA:
+	case IO_DIA:
 		// READS
 		*reg = cs->switches;
 		break;
-	case DIB:
+	case IO_DIB:
 		// INTA
 		iop->cs->duration += iop->cs->timing->time_io_inta;
 		*reg = intr_inta(iop->cs);
 		break;
-	case DIC:
+	case IO_DIC:
 		// IORST
 		TAILQ_INIT(&cs->irq_list);
 		TAILQ_INIT(&cs->masked_irq_list);
 		for (u = 0; u < 0x3f; u++) {
 			if (cs->iodevs[u] == NULL)
 				continue;
-			if (cs->iodevs[u]->ins_func != NULL) {
-				cs->iodevs[u]->ins_func(cs->iodevs[u], 0, NULL);
-			} else {
-				std_io_ins(cs->iodevs[u], 0, NULL);
-			}
+			cs->iodevs[u]->io_func(cs->iodevs[u], 0, NULL);
 		}
 		break;
-	case DOB:
+	case IO_DOB:
 		// MSKO
 		intr_msko(iop->cs, *reg);
 		break;
-	case DOC:
+	case IO_DOC:
 		printf("HALT\n");
 		cs->running = 0;
 		break;
@@ -213,11 +218,12 @@ dev_cpu_init(struct iodev *iop)
 
 struct iodev iodev_cpu = {
 	.init_func =	dev_cpu_init,
-	.ins_func =	dev_cpu_ins,
+	.io_func =	dev_cpu_io_ins,
+	.skp_func =	dev_cpu_skp_ins,
 	.name =		"CPU",
 };
 
 struct iodev iodev_cpu721 = {
-	.ins_func =	dev_cpu721_ins,
+	.io_func =	dev_cpu721_ins,
 	.name =		"CPU721",
 };

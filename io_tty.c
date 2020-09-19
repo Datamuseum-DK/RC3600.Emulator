@@ -119,7 +119,7 @@ new_tty(struct iodev *iop1, struct iodev *iop2)
 	install_dev(tp->i_dev, dev_tti_thread);
 
 	tp->o_dev->priv = tp;
-	tp->o_dev->ins_func = dev_tto_iofunc;
+	tp->o_dev->io_func = dev_tto_iofunc;
 
 	install_dev(tp->o_dev, NULL);
 	return (tp);

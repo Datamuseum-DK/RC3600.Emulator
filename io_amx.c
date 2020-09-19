@@ -70,7 +70,7 @@ dev_amx_insfunc(struct iodev *iop, uint16_t ioi, uint16_t *reg)
 	AN(iop->cs);
 
 	switch(IO_OPER(ioi)) {
-	case DOA:
+	case IO_DOA:
 		ap->chan = (*reg >> 8) & 7;
 		cmd = *reg & 0xf;
 		switch(cmd) {
@@ -107,15 +107,15 @@ dev_amx_insfunc(struct iodev *iop, uint16_t ioi, uint16_t *reg)
 			break;
 		}
 		break;
-	case DIA:
+	case IO_DIA:
 		*reg = iop->ireg_a;
 		break;
-	case DOB:
+	case IO_DOB:
 		ap->chan = (*reg >> 8) & 7;
 		buf[0] = *reg & 0x7f;
 		elastic_put(ap->ep[ap->chan], buf, 1);
 		break;
-	case DOC:
+	case IO_DOC:
 		break;
 	default:
 		break;
@@ -143,7 +143,7 @@ new_amx(struct iodev *iop, struct iodev *iop2)
 		ap->ep[i]->bits_per_char = 11;
 		ap->ep[i]->bits_per_sec = 9600;
 	}
-	ap->iop->ins_func = dev_amx_insfunc;
+	ap->iop->io_func = dev_amx_insfunc;
 	ap->iop->priv = ap;
 	install_dev(iop, NULL);
 	return (ap);

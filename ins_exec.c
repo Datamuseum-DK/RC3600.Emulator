@@ -38,29 +38,6 @@
 #include <sys/endian.h>
 
 #include "rc3600.h"
-
-/* NODEV============================================================= */
-
-static void
-dev_noodev_iofunc(struct iodev *iop, uint16_t ioi, uint16_t *reg)
-{
-
-	trace(iop->cs, "Unclaimed IO: 0x%04x dev=0x%x\n", iop->cs->ins, iop->cs->ins & 0x3f);
-	std_io_ins(iop, ioi, reg);
-	iop->ireg_a = 0;
-	iop->ireg_b = 0;
-	iop->ireg_c = 0;
-	iop->busy = 0;
-	iop->done = 0;
-}
-
-
-static struct iodev no_iodev = {
-	.mtx = PTHREAD_MUTEX_INITIALIZER,
-	.cond = PTHREAD_COND_INITIALIZER,
-	.ins_func = dev_noodev_iofunc,
-};
-
 /* ALU Instructions --------------------------------------------------*/
 
 static void
@@ -177,136 +154,6 @@ Insn_ALU(struct rc3600 *cs)
 
 /* I/O Instructions --------------------------------------------------*/
 
-void
-std_io_ins(struct iodev *iop, uint16_t ioi, uint16_t *reg)
-{
-	struct rc3600 *cs;
-
-	cs = iop->cs;
-
-	switch (ioi & 0xe7ff) {
-	case 0:
-		// IORST
-		iop->busy = 0;
-		iop->done = 0;
-		intr_lower(iop);
-		return;
-	case SKPBN:
-		cs->duration += cs->timing->time_io_skp;
-		if (iop->busy) {
-			cs->duration += cs->timing->time_io_skp_skip;
-			cs->npc++;
-		}
-		return;
-	case SKPBZ:
-		cs->duration += cs->timing->time_io_skp;
-		if (!iop->busy) {
-			cs->duration += cs->timing->time_io_skp_skip;
-			cs->npc++;
-		}
-		return;
-	case SKPDN:
-		cs->duration += cs->timing->time_io_skp;
-		if (iop->done) {
-			cs->duration += cs->timing->time_io_skp_skip;
-			cs->npc++;
-		}
-		return;
-	case SKPDZ:
-		cs->duration += cs->timing->time_io_skp;
-		if (!iop->done) {
-			cs->duration += cs->timing->time_io_skp_skip;
-			cs->npc++;
-		}
-		return;
-	case NIO:
-	case NIOS:
-	case NIOC:
-	case NIOP:
-		cs->duration += cs->timing->time_io_nio;
-		break;
-	case DIA:
-	case DIAS:
-	case DIAC:
-	case DIAP:
-		cs->duration += cs->timing->time_io_input;
-		*reg = iop->ireg_a;
-		ioi &= 0xe7ff;
-		break;
-	case DIB:
-	case DIBS:
-	case DIBC:
-	case DIBP:
-		cs->duration += cs->timing->time_io_input;
-		*reg = iop->ireg_b;
-		ioi &= 0xe7ff;
-		break;
-	case DIC:
-	case DICS:
-	case DICC:
-	case DICP:
-		cs->duration += cs->timing->time_io_input;
-		*reg = iop->ireg_c;
-		ioi &= 0xe7ff;
-		break;
-	case DOA:
-	case DOAS:
-	case DOAC:
-	case DOAP:
-		cs->duration += cs->timing->time_io_output;
-		iop->oreg_a = *reg;
-		ioi &= 0xe7ff;
-		break;
-	case DOB:
-	case DOBS:
-	case DOBC:
-	case DOBP:
-		cs->duration += cs->timing->time_io_output;
-		iop->oreg_b = *reg;
-		ioi &= 0xe7ff;
-		break;
-	case DOC:
-	case DOCS:
-	case DOCC:
-	case DOCP:
-		cs->duration += cs->timing->time_io_output;
-		iop->oreg_c = *reg;
-		ioi &= 0xe7ff;
-		break;
-	default:
-		printf("UNKNOWN IO INS 0x%04x (0x%04x)\n", ioi, ioi & 0xe7ff);
-		assert(0 == __LINE__);
-	}
-
-	switch(IO_ACTION(ioi)) {
-	case IO_CLEAR:
-		cs->duration += cs->timing->time_io_scp;
-		iop->done = 0;
-		iop->busy = 0;
-		if (iop != &no_iodev)
-			intr_lower(iop);
-		break;
-	case IO_START:
-		cs->duration += cs->timing->time_io_scp;
-		iop->done = 0;
-		iop->busy = 1;
-		if (iop != &no_iodev)
-			intr_lower(iop);
-		AZ(pthread_cond_signal(&iop->cond));
-		break;
-	case IO_PULSE:
-		cs->duration += cs->timing->time_io_scp;
-		iop->pulse = 1;
-		AZ(pthread_cond_signal(&iop->cond));
-		break;
-	default:
-		break;
-	}
-	if (iop->trace > 1)
-		trace_state(iop->cs);
-}
-
-
 static void
 Insn_IO(struct rc3600 *cs)
 {
@@ -315,19 +162,24 @@ Insn_IO(struct rc3600 *cs)
 	int unit;
 
 	unit = cs->ins & 0x3f;
-	ioi = cs->ins & 0xefc0;
+	ioi = cs->ins & 0xe7c0;
 	rpd = &cs->acc[(cs->ins >> 11) & 0x3];
 	iop = cs->iodevs[unit];
-	if (iop == NULL)
-		iop = &no_iodev;
+	AN(iop);
 
-	iop->cs = cs;
+if (iop->cs != cs) printf("XXXX CS %s\n", iop->name);
+if (iop->skp_func == NULL) printf("XXXX SKP %s\n", iop->name);
+if (iop->io_func == NULL) printf("XXXX IO %s\n", iop->name);
+
+	assert(iop->cs == cs);
+	AN(iop->skp_func);
+	AN(iop->io_func);
 
 	AZ(pthread_mutex_lock(&iop->mtx));
-	if (iop->ins_func != NULL)
-		iop->ins_func(iop, ioi, rpd);
+	if (IO_OPER(ioi) == IO_SKP)
+		iop->skp_func(iop, ioi);
 	else
-		std_io_ins(iop, ioi, rpd);
+		iop->io_func(iop, ioi, rpd);
 	AZ(pthread_mutex_unlock(&iop->mtx));
 }
 

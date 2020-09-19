@@ -37,10 +37,163 @@
 #include <string.h>
 #include "rc3600.h"
 
+/* NODEV ============================================================ */
+
+static void v_matchproto_(iodev_io_f)
+no_dev_io_ins(struct iodev *iop, uint16_t ioi, uint16_t *reg)
+{
+
+	trace(iop->cs,
+	    "Unclaimed IO: 0x%04x dev=0x%x\n",
+	    iop->cs->ins, iop->cs->ins & 0x3f);
+	iop->ireg_a = 0;
+	iop->ireg_b = 0;
+	iop->ireg_c = 0;
+	std_io_ins(iop, ioi, reg);
+	iop->busy = 0;
+	iop->done = 0;
+}
+
+static void v_matchproto_(iodev_skp_f)
+no_dev_skp_ins(struct iodev *iop, uint16_t ioi)
+{
+	trace(iop->cs,
+	    "Unclaimed IO: 0x%04x dev=0x%x\n",
+	    iop->cs->ins, iop->cs->ins & 0x3f);
+	iop->busy = iop->done = 0;
+	std_skp_ins(iop, ioi);
+}
+
+void
+iodev_init(struct rc3600 *cs)
+{
+	int i;
+
+	cs->nodev = calloc(sizeof *cs->nodev, 1);
+	cs->nodev->cs = cs;
+	AN(cs->nodev);
+	AZ(pthread_mutex_init(&cs->nodev->mtx, NULL));
+	AZ(pthread_cond_init(&cs->nodev->cond, NULL));
+	cs->nodev->io_func = no_dev_io_ins;
+	cs->nodev->skp_func = no_dev_skp_ins;
+
+	for (i = 0; i < 64; i++)
+		cs->iodevs[i] = cs->nodev;
+}
+
+/* STANDARD IO DEVICE BEHAVIOUR ===================================== */
+
+void v_matchproto_(iodev_io_f)
+std_io_ins(struct iodev *iop, uint16_t ioi, uint16_t *reg)
+{
+	struct rc3600 *cs;
+
+	cs = iop->cs;
+
+	switch (IO_OPER(ioi)) {
+	case 0:
+		// IORST
+		iop->busy = 0;
+		iop->done = 0;
+		intr_lower(iop);
+		return;
+	case IO_SKP:
+		assert(0 == __LINE__);
+	case IO_NIO:
+		cs->duration += cs->timing->time_io_nio;
+		break;
+	case IO_DIA:
+		cs->duration += cs->timing->time_io_input;
+		*reg = iop->ireg_a;
+		ioi &= 0xe7ff;
+		break;
+	case IO_DIB:
+		cs->duration += cs->timing->time_io_input;
+		*reg = iop->ireg_b;
+		ioi &= 0xe7ff;
+		break;
+	case IO_DIC:
+		cs->duration += cs->timing->time_io_input;
+		*reg = iop->ireg_c;
+		ioi &= 0xe7ff;
+		break;
+	case IO_DOA:
+		cs->duration += cs->timing->time_io_output;
+		iop->oreg_a = *reg;
+		ioi &= 0xe7ff;
+		break;
+	case IO_DOB:
+		cs->duration += cs->timing->time_io_output;
+		iop->oreg_b = *reg;
+		ioi &= 0xe7ff;
+		break;
+	case IO_DOC:
+		cs->duration += cs->timing->time_io_output;
+		iop->oreg_c = *reg;
+		ioi &= 0xe7ff;
+		break;
+	default:
+		printf("UNKNOWN IO INS 0x%04x (0x%04x)\n", ioi, ioi & 0xe7ff);
+		assert(0 == __LINE__);
+	}
+
+	switch(IO_ACTION(ioi)) {
+	case IO_CLEAR:
+		cs->duration += cs->timing->time_io_scp;
+		iop->done = 0;
+		iop->busy = 0;
+		if (iop != cs->nodev)
+			intr_lower(iop);
+		break;
+	case IO_START:
+		cs->duration += cs->timing->time_io_scp;
+		iop->done = 0;
+		iop->busy = 1;
+		if (iop != cs->nodev)
+			intr_lower(iop);
+		AZ(pthread_cond_signal(&iop->cond));
+		break;
+	case IO_PULSE:
+		cs->duration += cs->timing->time_io_scp;
+		iop->pulse = 1;
+		AZ(pthread_cond_signal(&iop->cond));
+		break;
+	default:
+		break;
+	}
+	if (iop->trace > 1)
+		trace_state(iop->cs);
+}
+
+void v_matchproto_(iodev_skp_f)
+std_skp_ins(struct iodev *iop, uint16_t ioi)
+{
+	int skip;
+
+	assert (IO_OPER(ioi) == IO_SKP);
+
+	if (ioi & 0x0080)
+		skip = iop->done;
+	else
+		skip = iop->busy;
+
+	if (ioi & 0x0040)
+		skip = !skip;
+
+	iop->cs->duration += iop->cs->timing->time_io_skp;
+
+	if (skip) {
+		iop->cs->duration += iop->cs->timing->time_io_skp_skip;
+		iop->cs->npc++;
+	}
+}
+
+/* DEVICE NUMBER ASSIGMENTS ========================================= */
+
 struct dev_assignment {
 	const char		*name;
 	unsigned		unit;
-	unsigned		address;
+	unsigned		devno;
 	int			imask;
 	const char		*comment;
 };
@@ -151,8 +304,10 @@ static const struct dev_assignment default_assignments[] = {
 	{ NULL,		0,	0,	0,	NULL},
 };
 
+/* CLI ============================================================== */
+
 static struct iodev *
-mk_iop(struct cli *cli, const char *drvname, unsigned unit)
+cli_mk_iop(struct cli *cli, const char *drvname, unsigned unit)
 {
 	const struct dev_assignment *da;
 	struct iodev *iop;
@@ -167,7 +322,7 @@ mk_iop(struct cli *cli, const char *drvname, unsigned unit)
 	}
 	iop = calloc(sizeof *iop, 1);
 	AN(iop);
-	iop->unit = da->address;
+	iop->devno = da->devno;
 	iop->imask = da->imask;
 	bprintf(iop->name, "%s%u", drvname, unit);
 	iop->cs = cli->cs;
@@ -190,26 +345,27 @@ cli_dev_get_unit(struct cli *cli, const char *drv1, const char *drv2, new_dev_f 
 
 	p = NULL;
 	if (cli->ac > 0) {
-		// "create"
+		// XXX: implement "create" where unit+mask is specified.
 		unit = strtoul(cli->av[0], &p, 0);
-		if (p != NULL && *p == '\0' && unit <= 63) {
+		if (p != NULL && *p == '\0' && unit <= IO_MAXDEV) {
 			cli->ac--;
 			cli->av++;
 		} else {
 			unit = 0;
 		}
 	}
+	assert(unit <= IO_MAXDEV);
 	bprintf(nbuf, "%s%lu", drv1, unit);
 	for (i = 0; i < 63; i++) {
 		iop1 = cli->cs->iodevs[i];
 		if (iop1 != NULL && !strcmp(iop1->name, nbuf))
 			return (iop1->priv);
 	}
-	iop1 = mk_iop(cli, drv1, unit);
+	iop1 = cli_mk_iop(cli, drv1, (unsigned)unit);
 	if (iop1 == NULL)
 		return (NULL);
 	if (drv2 != NULL) {
-		iop2 = mk_iop(cli, drv2, unit);
+		iop2 = cli_mk_iop(cli, drv2, unit);
 		if (iop2 == NULL)
 			return (NULL);
 	}
