@@ -30,6 +30,7 @@
  */
 
 #include <stdio.h>
+#include <strings.h>
 #include "rc3600.h"
 
 static const struct ins_timing nova_timing = {
@@ -172,19 +173,26 @@ const struct ins_timing * const ins_timings[] = {
 	NULL
 };
 
-int
-ins_timing_check(void)
+const struct ins_timing *
+get_timing(const char *cpu)
 {
 	int i, rv = 0;
 
-	for (i = 0; ins_timings[i] != NULL; i++) {
 #define TIMING_MACRO(fld, x) \
-	if (x && ins_timings[i]->fld == 0) { \
-		printf("%s lacks %s timing\n", ins_timings[i]->model, #fld); \
-		rv++; \
+		if (x && ins_timings[i]->fld == 0) { \
+			printf("%s lacks %s timing\n", \
+			    ins_timings[i]->model, #fld); \
+			rv++; \
+		}
+
+	for (i = 0; ins_timings[i] != NULL; i++) {
+		TIMINGS
 	}
-	TIMINGS
 #undef TIMING_MACRO
-	}
-	return (rv);
+	assert(rv == 0);
+	
+	for (i = 0; ins_timings[i] != NULL; i++)
+		if (!strcasecmp(cpu, ins_timings[i]->model))
+			return (ins_timings[i]);
+	return (NULL);
 }

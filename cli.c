@@ -105,7 +105,7 @@ cli_start(struct cli *cli)
 		return;
 	}
 	if (!cli_n_args(cli, 0))
-		cpu_start(cli->cs);
+		cpu_start(cli);
 }
 
 static void v_matchproto_(cli_func_t)
@@ -137,7 +137,7 @@ cli_autoload(struct cli *cli)
 		cpu_stop(cli->cs);
 		AutoRom(cli->cs);
 		cli->cs->pc = 0;
-		cpu_start(cli->cs);
+		cpu_start(cli);
 	}
 }
 

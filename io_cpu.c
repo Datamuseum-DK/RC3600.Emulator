@@ -233,6 +233,7 @@ cli_cpu(struct cli *cli)
 		bprintf(iop->name, "%s", "CPU");
 		install_dev(iop, NULL);
 		dev_cpu_init();
+		cs->timing = get_timing("RC3609");
 	}
 	// cli_unknown(cli);
 }

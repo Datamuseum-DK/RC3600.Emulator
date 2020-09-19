@@ -141,15 +141,22 @@ install_dev(struct iodev *iop, iodev_thr *thr)
 /**********************************************************************/
 
 void
-cpu_start(struct rc3600 *cs)
+cpu_start(struct cli *cli)
 {
+	struct rc3600 *cs;
 
-	if (cs->running)
-		return;
-	AZ(pthread_mutex_lock(&cs->run_mtx));
-	cs->running = 1;
-	AZ(pthread_mutex_unlock(&cs->run_mtx));
-	AZ(pthread_cond_signal(&cs->run_cond));
+	AN(cli);
+	cs = cli->cs;
+	AN(cs)
+
+	if (cs->iodevs[IO_CPUDEV] == cs->nodev) {
+		(void)cli_error(cli, "No CPU model has been chosen\n");
+	} else if (!cs->running) {
+		AZ(pthread_mutex_lock(&cs->run_mtx));
+		cs->running = 1;
+		AZ(pthread_mutex_unlock(&cs->run_mtx));
+		AZ(pthread_cond_signal(&cs->run_cond));
+	}
 }
 
 void
@@ -261,7 +268,6 @@ cpu_new(void)
 	AZ(pthread_cond_init(&cs->wait_cond, NULL));
 	AZ(pthread_mutex_init(&cs->callout_mtx, NULL));
 
-	cs->timing = ins_timings[3];
 	cs->core_size = 0x8000;
 	cs->core = core_new(cs->core_size);
 
@@ -301,9 +307,6 @@ main(int argc, char **argv)
 
 	cs = cpu_new();
 	AN(cs);
-
-	AZ(ins_timing_check());
-
 
 	while ((ch = getopt(argc, argv, "b:htT:")) != -1) {
 		switch (ch) {

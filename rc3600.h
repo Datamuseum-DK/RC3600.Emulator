@@ -46,6 +46,7 @@
 #define v_matchproto_(xxx)              /*lint --e{818} */
 
 struct rc3600;
+struct cli;
 struct iodev;
 struct core;
 struct ins_timing;
@@ -98,7 +99,7 @@ struct rc3600 {
 
 void rc3600_exec(struct rc3600 *);
 
-void cpu_start(struct rc3600 *cs);
+void cpu_start(struct cli *);
 void cpu_stop(struct rc3600 *cs);
 void cpu_instr(struct rc3600 *cs);
 
@@ -231,6 +232,7 @@ struct iodev {
 	pthread_cond_t		sleep_cond;
 };
 
+#define IO_CPUDEV	0x3f
 #define IO_MAXDEV	0x3f
 
 #define	IO_NIO		0x6000
@@ -284,8 +286,7 @@ struct ins_timing {
 #undef	TIMING_MACRO
 };
 
-extern const struct ins_timing * const ins_timings[];
-int ins_timing_check(void);
+const struct ins_timing *get_timing(const char *cpu);
 
 /* AUTOROM ************************************************************/
 
