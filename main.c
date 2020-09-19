@@ -267,6 +267,7 @@ cpu_new(void)
 
 	iodev_init(cs);
 
+#if 0
 	iodev_cpu.cs = cs;
 	cs->iodevs[0x3f] = &iodev_cpu;
 
@@ -275,6 +276,7 @@ cpu_new(void)
 	//cs->iodevs[0x02] = &iodev_cpu721;
 
 	iodev_cpu.init_func(&iodev_cpu);
+#endif
 
 	TAILQ_INIT(&cs->irq_list);
 	TAILQ_INIT(&cs->masked_irq_list);
@@ -329,6 +331,7 @@ main(int argc, char **argv)
 	argv += optind;
 
 	if (!bare) {
+		AZ(cli_exec(cs, "cpu"));
 		AZ(cli_exec(cs, "tty 0"));
 		AZ(cli_exec(cs, "rtc 0"));
 	}

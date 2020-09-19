@@ -373,6 +373,7 @@ static const struct cli_cmds {
 	// reset
 	// continue (differs from start how ?)
 
+	{ "cpu",	cli_cpu },
 	{ "tty",	cli_tty },
 	{ "dkp",	cli_dkp },
 	{ "rtc",	cli_rtc },

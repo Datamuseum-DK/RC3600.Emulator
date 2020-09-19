@@ -167,12 +167,11 @@ dev_cpu721_ins(struct iodev *iop, uint16_t ioi, uint16_t *reg)
 }
 
 static void
-dev_cpu_init(struct iodev *iop)
+dev_cpu_init(void)
 {
 	unsigned u, acc, flg;
 	const char *iflg;
 
-	(void)iop;
 	for (acc = 0; acc < 4; acc++) {
 		for (flg = 0; flg < 4; flg++) {
 			if (flg == 1)
@@ -215,15 +214,25 @@ dev_cpu_init(struct iodev *iop)
 	disass_magic(0x67ff, "SKPPWRZ");
 }
 
+void v_matchproto_(cli_func_f)
+cli_cpu(struct cli *cli)
+{
+	struct rc3600 *cs;
+	struct iodev *iop;
 
-struct iodev iodev_cpu = {
-	.init_func =	dev_cpu_init,
-	.io_func =	dev_cpu_io_ins,
-	.skp_func =	dev_cpu_skp_ins,
-	.name =		"CPU",
-};
-
-struct iodev iodev_cpu721 = {
-	.io_func =	dev_cpu721_ins,
-	.name =		"CPU721",
-};
+	(void)dev_cpu721_ins;
+	cs = cli->cs;
+	if (cs->iodevs[0x3f] == cs->nodev) {
+		iop = calloc(sizeof *iop, 1);
+		AN(iop);
+		iop->cs = cs;
+		iop->imask = 0xff;
+		iop->devno = 0x3f;
+		iop->io_func = dev_cpu_io_ins;
+		iop->skp_func = dev_cpu_skp_ins;
+		bprintf(iop->name, "%s", "CPU");
+		install_dev(iop, NULL);
+		dev_cpu_init();
+	}
+	// cli_unknown(cli);
+}

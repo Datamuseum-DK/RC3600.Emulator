@@ -293,8 +293,7 @@ void AutoRom(struct rc3600 *cs);
 
 /* I/O DRIVERS ********************************************************/
 
-extern struct iodev iodev_cpu;
-extern struct iodev iodev_cpu721;
+cli_func_f cli_cpu;
 cli_func_f cli_tty;
 cli_func_f cli_dkp;
 cli_func_f cli_rtc;
