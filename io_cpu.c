@@ -34,6 +34,15 @@
 #include <string.h>
 #include "rc3600.h"
 
+struct cpu_model;
+typedef void cpu_setup_f(struct rc3600 *, struct cpu_model *);
+
+struct cpu_model {
+	const char		*name;
+	const char		*timing;
+	cpu_setup_f		*setup;
+};
+
 static void v_matchproto_(iodev_io_f)
 dev_cpu_skp_ins(struct iodev *iop, uint16_t ioi)
 {
@@ -214,26 +223,105 @@ dev_cpu_init(void)
 	disass_magic(0x67ff, "SKPPWRZ");
 }
 
-void v_matchproto_(cli_func_f)
-cli_cpu(struct cli *cli)
+static void v_matchproto_(cpu_setup_f)
+basic_cpu_setup(struct rc3600 *cs, struct cpu_model *mp)
 {
-	struct rc3600 *cs;
 	struct iodev *iop;
 
-	(void)dev_cpu721_ins;
-	cs = cli->cs;
-	if (cs->iodevs[0x3f] == cs->nodev) {
+	if (cs->iodevs[IO_CPUDEV] == cs->nodev) {
 		iop = calloc(sizeof *iop, 1);
 		AN(iop);
+		iop->priv = mp;
 		iop->cs = cs;
 		iop->imask = 0xff;
-		iop->devno = 0x3f;
+		iop->devno = IO_CPUDEV;
 		iop->io_func = dev_cpu_io_ins;
 		iop->skp_func = dev_cpu_skp_ins;
 		bprintf(iop->name, "%s", "CPU");
 		install_dev(iop, NULL);
-		dev_cpu_init();
-		cs->timing = get_timing("RC3609");
+	} else {
+		iop = cs->iodevs[IO_CPUDEV];
+		iop->priv = mp;
 	}
-	// cli_unknown(cli);
+	dev_cpu_init();
+	cs->timing = get_timing(mp->timing);
+	AN(cs->timing);
+}
+
+/*
+ * From: RCSL 43-GL-10561 MUI13 source code:
+ *
+ *	THE FOLLOWING CPU-TYPES ARE HANDLED:
+ *		0 : RC3603
+ *		1 : RC3703
+ *		2 : RC3803
+ *		3 : RC3703 WITH MEMORY FACILITY AS RC3803
+ *		4 : RC3603 WITH MEMORY FACILITY AS RC3803
+ *
+ * From: RCSL 44-RT-1557 INSTRUCTION TIMER TEST source code
+ *
+ *	FIRST MEM MODULE, CPU TYPE
+ *	NOVA 1200		12
+ *	NOVA 2 - 8K		16
+ *	NOVA2 - 16K		17
+ *	RC3603 - 16K		20
+ *	  WITH BREAK		21
+ *	RC3603 - 32K		22
+ *	  WITH BREAK		23
+ */
+
+static struct cpu_model cpu_models[] = {
+	{ "nova1200",	"NOVA 1200",	basic_cpu_setup},
+	{ "nova2",	"NOVA 2",	basic_cpu_setup},
+
+	{ "nova",	"NOVA",		basic_cpu_setup},
+	{ "nova800",	"NOVA 800",	basic_cpu_setup},
+
+	{ "RC7000",	"NOVA 1200",	basic_cpu_setup},
+	{ "RC3600",	"RC3609",	basic_cpu_setup},
+	{ "RC3700",	"RC3608",	basic_cpu_setup},
+	{ "RC3800",	"RC3608",	basic_cpu_setup},
+	{ NULL,		NULL,		NULL},
+};
+
+void v_matchproto_(cli_func_f)
+cli_cpu(struct cli *cli)
+{
+	struct rc3600 *cs;
+	struct cpu_model *mp, *mp2;
+	const char *s;
+
+	(void)dev_cpu721_ins;
+	cs = cli->cs;
+	cli->ac--;
+	cli->av++;
+	if (cli->ac == 1 && !strcmp(cli->av[0], "model")) {
+		mp2 = cs->iodevs[IO_CPUDEV]->priv;
+		for (mp = cpu_models; mp->name != NULL; mp++) {
+			if (mp2 == mp)
+				s = "-->";
+			else
+				s = "   ";
+			cli_printf(cli,
+			    "%s %s (%s)\n", s, mp->name, mp->timing);
+		}
+		return;
+	}
+	if (cli->ac > 0 && !strcmp(cli->av[0], "model")) {
+		if (cli_n_args(cli, 1))
+			return;
+		for (mp = cpu_models; mp->name != NULL; mp++)
+			if (!strcasecmp(mp->name, cli->av[1]))
+				break;
+		if (mp->name == NULL) {
+			(void)cli_error(cli, "CPU model not found.\n");
+			return;
+		}
+		cli->ac -= 2;
+		cli->av += 2;
+		mp->setup(cli->cs, mp);
+		return;
+	}
+	if (cs->iodevs[0x3f] == cs->nodev)
+		basic_cpu_setup(cs, cpu_models);
 }

@@ -30,9 +30,15 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <strings.h>
 #include "rc3600.h"
 
+/*
+ * The values are from 014-000631 page F-1 of 4 "NOVA".
+ * They match 015-000009-09 page D12 "Nova".
+ * The time_jsr number looks strange, but both sources provide it.
+ */
 static const struct ins_timing nova_timing = {
 	.model = "NOVA",
 	.time_lda = 5200,
@@ -51,7 +57,11 @@ static const struct ins_timing nova_timing = {
 	.time_io_inta = 4400,
 };
 
-/* RCSL_44_RT_1558_RC3600_INSTRUCTION_TIMER_TEST type 12 */
+/*
+ * The values are from 014-000631 page F-1 of 4 "1200 SERIES"
+ * They match 015-000009-09 page D12 "1200 Series".
+ * They match RCSL_44_RT_1558_RC3600_INSTRUCTION_TIMER_TEST "NOVA 1200 12"
+ */
 static const struct ins_timing nova1200_timing = {
 	.model = "NOVA 1200",
 	.time_lda = 2550,
@@ -72,6 +82,11 @@ static const struct ins_timing nova1200_timing = {
 	.time_io_inta = 2550,
 };
 
+/*
+ * The values are from 014-000631 page F-1 of 4 "800, 820, 840"
+ * They match 015-000009-09 page D12 "800 Series".
+ * No match in RCSL_44_RT_1558_RC3600_INSTRUCTION_TIMER_TEST
+ */
 static const struct ins_timing nova800_timing = {
 	.model = "NOVA 800",
 	.time_lda = 1600,
@@ -93,6 +108,13 @@ static const struct ins_timing nova800_timing = {
 	.time_io_inta = 2200,
 };
 
+/*
+ * The values are from 014-000631 page F-1 of 4 "NOVA 2, 16K"
+ * No match in 015-000009-09 page D12
+ * RCSL_44_RT_1558_RC3600_INSTRUCTION_TIMER_TEST "NOVA 2 - 17K 20"
+ * matches apart from "ISZ CWORK" and "DSZ CWORK" which measure 2100
+ * but expect 2300.
+ */
 static const struct ins_timing nova2_timing = {
 	.model = "NOVA 2",
 	.time_lda = 2000,
@@ -114,8 +136,11 @@ static const struct ins_timing nova2_timing = {
 	.time_io_inta = 1500,
 };
 
-
-/* RCSL-42-I-1008 RC3803 CPU Programmer's Guide, p126 */
+/*
+ * RCSL-42-I-1008 RC3803 CPU Programmer's Guide, p126
+ * Matches RCSL_44_RT_1558_RC3600_INSTRUCTION_TIMER_TEST "RC3603 - 32K 22"
+ * But with a 50nsec delta a lot of places.
+ */
 static const struct ins_timing rc3608_timing = {
 	.model = "RC3608",
 	.time_lda = 1600,
@@ -139,7 +164,11 @@ static const struct ins_timing rc3608_timing = {
 	.time_io_inta = 1850,
 };
 
-/* RCSL-42-I-1008 RC3803 CPU Programmer's Guide, p126 */
+/*
+ * RCSL-42-I-1008 RC3803 CPU Programmer's Guide, p126
+ * Matches RCSL_44_RT_1558_RC3600_INSTRUCTION_TIMER_TEST "RC3603 - 16K 20"
+ * But with a 50nsec delta a lot of places.
+ */
 static const struct ins_timing rc3609_timing = {
 	.model = "RC3609",
 	.time_lda = 1400,
@@ -180,7 +209,7 @@ get_timing(const char *cpu)
 
 #define TIMING_MACRO(fld, x) \
 		if (x && ins_timings[i]->fld == 0) { \
-			printf("%s lacks %s timing\n", \
+			fprintf(stderr, "CPU %s lacks %s timing\n", \
 			    ins_timings[i]->model, #fld); \
 			rv++; \
 		}
@@ -189,8 +218,9 @@ get_timing(const char *cpu)
 		TIMINGS
 	}
 #undef TIMING_MACRO
-	assert(rv == 0);
-	
+	if (rv)
+		exit(2);
+
 	for (i = 0; ins_timings[i] != NULL; i++)
 		if (!strcasecmp(cpu, ins_timings[i]->model))
 			return (ins_timings[i]);
