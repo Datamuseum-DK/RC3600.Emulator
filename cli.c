@@ -244,7 +244,7 @@ cli_deposit(struct cli *cli)
 		cli_printf(cli, "\t\tDeposit value in register or memory\n");
 		return;
 	}
-	if (cli_n_args(cli, 1))
+	if (cli_n_args(cli, 2))
 		return;
 	if (cli->ac != 3) {
 		cli_printf(cli,
