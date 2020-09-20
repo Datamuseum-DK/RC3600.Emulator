@@ -52,6 +52,10 @@ test:	rc3600
 		'tty match xon' \
 		'tty << "LIST/CORE"' \
 		'tty match xon' \
+		'tty << "CAP8"' \
+		'tty match xon' \
+		'tty << "CATLI M$$$$$$$$"' \
+		'tty match expect "BREAK 7"' \
 		'exit' \
 		2>&1 | tee /critter/_3
 

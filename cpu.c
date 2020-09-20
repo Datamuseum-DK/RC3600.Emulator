@@ -174,7 +174,6 @@ cpu_thread(void *priv)
 				pace = dt;
 		}
 		AZ(pthread_mutex_lock(&cs->run_mtx));
-		pace = 0;
 		if (TAILQ_EMPTY(&cs->irq_list) && pace > 0) {
 			zzz = pace + now();
 			ts.tv_sec = zzz / 1000000000;
