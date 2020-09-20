@@ -128,6 +128,7 @@ elastic_match_wait(const struct elastic *ep)
 int v_matchproto_(cli_elastic_f)
 cli_elastic_match(struct elastic *ep, struct cli *cli)
 {
+	char buf[2];
 
 	AN(cli);
 	if (cli->help) {
@@ -182,6 +183,17 @@ cli_elastic_match(struct elastic *ep, struct cli *cli)
 		elastic_match_wait(ep);
 		cli->av += 1;
 		cli->ac -= 1;
+		return (1);
+	}
+	if (!strcasecmp(*cli->av, "byte")) {
+		if (cli_n_args(cli, 1))
+			return(1);
+		buf[0] = strtoul(cli->av[1], NULL, 0);
+		buf[1] = 0x00;
+		elastic_match_arm(ep, buf);
+		elastic_match_wait(ep);
+		cli->av += 2;
+		cli->ac -= 2;
 		return (1);
 	}
 	return (0);
