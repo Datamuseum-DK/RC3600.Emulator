@@ -1,0 +1,20 @@
+cpu model rc3803
+cpu model
+cpu extmem
+cpu core 128
+tty 1 trace 1
+tty 1 cps 10000
+tty 1 < _tti1
+rtc trace 0
+tty telnet :2100
+tty baud 9600
+switch 0000050
+autoload
+tty match byte 0x1f
+tty > _tty
+rtc trace 1
+switch 0000000
+
+tty match expect "SWITCH 12 CONTINUE (Y/N): Y ?"
+tty match byte 0x07
+stop

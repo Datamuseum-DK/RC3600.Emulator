@@ -60,6 +60,7 @@ typedef void *iodev_thr(void *);
 
 struct rc3600 {
 	const char		*cpu_model;
+
 	pthread_mutex_t		run_mtx;
 	pthread_mutex_t		running_mtx;
 	pthread_cond_t		run_cond;
@@ -72,14 +73,21 @@ struct rc3600 {
 	uint16_t		pc;		/* Program counter */
 	uint16_t		npc;		/* Next program counter */
 	uint16_t		ins;		/* Current instruction */
+
+	const struct ins_timing	*timing;
 	nanosec			duration;	/* Duration of instruction */
+
 	struct iodev		*iodevs[64];
 	struct iodev		*nodev;
-	const struct ins_timing	*timing;
+
+	uint64_t		ins_count;
 	ins_exec_f		*ins_exec[1 << 16];
 
+	uint16_t		ident;
+	int			ext_core;
 	struct core		*core;
 	unsigned		core_size;
+	uint64_t		last_core;
 
 	uint16_t		switches;
 
@@ -91,18 +99,13 @@ struct rc3600 {
 	nanosec			real_time;
 	nanosec			sim_time;
 
-	uint64_t		last_core;
-	uint64_t		ins_count;
-
 	int			do_trace;
+	int			core_trace;
 	int			fd_trace;
 
 	pthread_mutex_t		callout_mtx;
 	TAILQ_HEAD(, callout)	callouts;
 };
-
-
-
 
 /* CPU ****************************************************************/
 
@@ -114,6 +117,8 @@ void cpu_start(struct rc3600 *);
 void cpu_stop(struct rc3600 *cs);
 void cpu_instr(struct rc3600 *cs);
 void cpu_nova(struct rc3600 *cs);
+void cpu_extmem(struct rc3600 *cs);
+void cpu_720(struct rc3600 *cs);
 
 extern const struct ins_timing nova_timing;
 extern const struct ins_timing nova1200_timing;
@@ -162,8 +167,7 @@ void dev_trace(const struct iodev *iop, const char *fmt, ...) __printflike(2, 3)
 #define CORE_INDIR	(1<<6)
 #define CORE_DATA	(1<<7)
 
-struct core *core_new(unsigned size);
-void core_setsize(struct core *cp, unsigned siz);
+struct core *core_new(void);
 
 uint16_t core_read(struct rc3600 *, uint16_t addr, int how);
 void core_write(struct rc3600 *, uint16_t addr, uint16_t val, int how);

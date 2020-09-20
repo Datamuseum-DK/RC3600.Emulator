@@ -36,8 +36,16 @@ static void
 cpu_update_intr_flag(struct rc3600 *cs)
 {
 	switch(cs->ins & 0xc0) {
-	case 0x40: cs->inten[2] = 1; break;
-	case 0x80: memset(cs->inten, 0, sizeof cs->inten); break;
+	case 0x00:
+		break;
+	case 0x40:
+		cs->inten[2] = 1;
+		break;
+	case 0x80:
+		memset(cs->inten, 0, sizeof cs->inten);
+		break;
+	case 0xc0:
+		break;
 	default: break;
 	}
 }
@@ -67,6 +75,7 @@ cpu_nova_inta(struct rc3600 *cs)
 static void v_matchproto_(ins_exec_f)
 cpu_nova_msko(struct rc3600 *cs)
 {
+	cs->duration += cs->timing->time_io_output;
 	intr_msko(cs, cs->acc[(cs->ins >> 11) & 3]);
 	cpu_update_intr_flag(cs);
 }
@@ -83,35 +92,44 @@ cpu_nova_iorst(struct rc3600 *cs)
 {
 	unsigned u;
 
+	cs->ext_core = 0;
+	AZ(pthread_mutex_lock(&cs->run_mtx));
 	TAILQ_INIT(&cs->irq_list);
 	TAILQ_INIT(&cs->masked_irq_list);
-	for (u = 0; u < IO_MAXDEV; u++) {
+	for (u = 0; u < IO_MAXDEV; u++)
 		cs->iodevs[u]->ipen = 0;
-		if (cs->iodevs[u] != cs->nodev) {
+	AZ(pthread_mutex_unlock(&cs->run_mtx));
+	for (u = 0; u < IO_MAXDEV; u++)
+		if (cs->iodevs[u] != cs->nodev)
 			cs->iodevs[u]->io_func(cs->iodevs[u], 0, NULL);
-		}
-	}
 	cpu_update_intr_flag(cs);
 }
 
 static void v_matchproto_(ins_exec_f)
 cpu_nova_skpbn(struct rc3600 *cs)
 {
-	if (cs->inten[0])
+	cs->duration += cs->timing->time_io_skp;
+	if (cs->inten[0]) {
+		cs->duration += cs->timing->time_io_skp_skip;
 		cs->npc++;
+	}
 }
 
 static void v_matchproto_(ins_exec_f)
 cpu_nova_skpbz(struct rc3600 *cs)
 {
-	if (!cs->inten[0])
+	cs->duration += cs->timing->time_io_skp;
+	if (!cs->inten[0]) {
+		cs->duration += cs->timing->time_io_skp_skip;
 		cs->npc++;
+	}
 }
 
 static void v_matchproto_(ins_exec_f)
 cpu_nova_skpdn(struct rc3600 *cs)
 {
 	// Test for Power Fail == 1
+	cs->duration += cs->timing->time_io_skp;
 	(void)cs;
 }
 
@@ -119,6 +137,8 @@ static void v_matchproto_(ins_exec_f)
 cpu_nova_skpdz(struct rc3600 *cs)
 {
 	// Test for Power Fail == 0
+	cs->duration += cs->timing->time_io_skp;
+	cs->duration += cs->timing->time_io_skp_skip;
 	cs->npc++;
 }
 
@@ -147,7 +167,7 @@ cpu_nova(struct rc3600 *cs)
 		default: iflg = ""; nop = "NOP"; break;
 		}
 		cs->ins_exec[0x603f | f] = cpu_nova_nop;
-		disass_magic(0x613f | f, "%s", nop);
+		disass_magic(0x603f | f, "%s", nop);
 		for (a = 0x0000; a < 0x2000; a += 0x0800) {
 			acc = a >> 11;
 			cs->ins_exec[0x613f | f | a] = cpu_nova_reads;

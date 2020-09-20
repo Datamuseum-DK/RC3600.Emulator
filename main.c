@@ -50,7 +50,7 @@ trace_state(struct rc3600 *cs)
 		return;
 	bprintf(buf,
 	    "I %jd %d %04x %04x %06o  %04x %04x %04x %04x %c"
-	    " s%.6f r%.6f d%.6f"
+	    " s%.9f r%.6f d%.6f"
 	    " w%8ju %s\n",
 	    cs->ins_count,
 	    cs->inten[0],
@@ -107,6 +107,7 @@ main(int argc, char **argv)
 {
 	int ch, i;
 	char buf[BUFSIZ];
+	char *p;
 	int bare = 0;
 	struct rc3600 *cs;
 
@@ -157,6 +158,10 @@ main(int argc, char **argv)
 	while (1) {
 		if (fgets(buf, sizeof buf, stdin) != buf)
 			break;
+		p = strchr(buf, '\n');
+		if (p != NULL)
+			*p = '\0';
+		printf("cli <%s>\n", buf);
 		if (cli_exec(cs, buf) < 0)
 			break;
 	}

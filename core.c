@@ -41,29 +41,20 @@ struct loc {
 
 struct core {
 	struct loc		loc[1<<16];
-	unsigned		size;
 	struct core_handlers	handlers;
 	pthread_mutex_t		mtx;
 };
 
 struct core *
-core_new(unsigned size)
+core_new(void)
 {
 	struct core *cp;
 
-	assert(size <= 1<<16);
 	cp = calloc(sizeof *cp, 1);
 	AN(cp);
 	TAILQ_INIT(&cp->handlers);
-	cp->size = size;
 	AZ(pthread_mutex_init(&cp->mtx, NULL));
 	return (cp);
-}
-
-void
-core_setsize(struct core *cp, unsigned siz)
-{
-	cp->size = siz;
 }
 
 const char *
@@ -97,7 +88,7 @@ core_read(struct rc3600 *cs, uint16_t addr, int how)
 
 	AN(cs);
 	AN(how);
-	if (addr >= cs->core->size)
+	if (addr >= cs->core_size)
 		return (0);
 	AZ(pthread_mutex_lock(&cs->core->mtx));
 	rv = cs->core->loc[addr].core;
@@ -111,6 +102,8 @@ core_read(struct rc3600 *cs, uint16_t addr, int how)
 	if (!(how & (CORE_NULL | CORE_INS)))
 		cs->last_core = cs->ins_count;
 	AZ(pthread_mutex_unlock(&cs->core->mtx));
+	if (cs->core_trace)
+		trace(cs, "R %04x %04x\n", addr, rv);
 	return (rv);
 }
 
@@ -122,7 +115,8 @@ core_write(struct rc3600 *cs, uint16_t addr, uint16_t val, int how)
 
 	AN(cs);
 	AN(how);
-// trace(cs, "W %04x %04x\n", addr, val);
+	if (cs->core_trace)
+		trace(cs, "W %04x %04x\n", addr, val);
 	AZ(pthread_mutex_lock(&cs->core->mtx));
 	TAILQ_FOREACH(ch, &cs->core->handlers, next) {
 		if (ch->write_func == NULL)

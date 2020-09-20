@@ -146,7 +146,7 @@ cpu_thread(void *priv)
 		cs->npc = cs->pc + 1;
 		cs->ins_exec[cs->ins](cs);
 		cs->pc = cs->npc;
-		if (cs->core_size <= 0x8000)
+		if (!cs->ext_core)
 			cs->pc &= 0x7fff;
 		cs->inten[0] = cs->inten[1];
 		cs->inten[1] = cs->inten[2];
@@ -174,6 +174,7 @@ cpu_thread(void *priv)
 				pace = dt;
 		}
 		AZ(pthread_mutex_lock(&cs->run_mtx));
+		pace = 0;
 		if (TAILQ_EMPTY(&cs->irq_list) && pace > 0) {
 			zzz = pace + now();
 			ts.tv_sec = zzz / 1000000000;
@@ -199,6 +200,17 @@ cpu_setup_nova1200(struct rc3600 *cs, const struct cpu_model *cm)
 {
 	cpu_init_instructions(cs);
 	cpu_nova(cs);
+	cs->timing = cm->timing;
+	cs->cpu_model = cm->name;
+}
+
+static void
+cpu_setup_cpu720(struct rc3600 *cs, const struct cpu_model *cm)
+{
+	cpu_init_instructions(cs);
+	cpu_nova(cs);
+	cpu_720(cs);
+	cs->ident = 2;
 	cs->timing = cm->timing;
 	cs->cpu_model = cm->name;
 }
@@ -269,7 +281,7 @@ static const struct cpu_model cpu_models[] = {
 	{
 	.name = "RC3703",
 	.desc = "Regnecentralen RC3700 (CPU720 ?)",
-	.setup = cpu_setup_nova1200,
+	.setup = cpu_setup_cpu720,
 	.timing = &rc3608_timing,
 	},
 	{
@@ -279,7 +291,7 @@ static const struct cpu_model cpu_models[] = {
 	 */
 	.name = "RC3803",
 	.desc = "Regnecentralen RC3800 (CPU721 ?)",
-	.setup = cpu_setup_nova1200,
+	.setup = cpu_setup_cpu720,
 	.timing = &rc3608_timing,
 	},
 	{ NULL, NULL, NULL, NULL },
@@ -300,7 +312,7 @@ cpu_new(void)
 	AZ(pthread_mutex_init(&cs->callout_mtx, NULL));
 
 	cs->core_size = 0x8000;
-	cs->core = core_new(cs->core_size);
+	cs->core = core_new();
 
 	iodev_init(cs);
 
@@ -337,9 +349,11 @@ cli_cpu(struct cli *cli)
 			cli_printf(cli, "%s %-20s %s\n",
 			    ptr, mp->name, mp->desc);
 		}
+		cli->ac -= 1;
+		cli->av += 1;
 		return;
 	}
-	if (cli->ac > 0 && !strcmp(cli->av[0], "model")) {
+	if (cli->ac > 1 && !strcmp(cli->av[0], "model")) {
 		if (cli_n_args(cli, 1))
 			return;
 		for (mp = cpu_models; mp->name != NULL; mp++)
@@ -354,88 +368,30 @@ cli_cpu(struct cli *cli)
 		mp->setup(cs, mp);
 		return;
 	}
-}
-
-#if 0
-
-static void
-dev_cpu721_ins(struct iodev *iop, uint16_t ioi, uint16_t *reg)
-{
-	uint16_t u;
-	const char *what = "?";
-
-	if ((iop->cs->ins & ~0x1800) == 0x6102) {
-		// IDFY
-		what = "IDFY";
-		*reg = 4;
-	} else if (iop->cs->ins == 0x6781) {
-		// CHECK MEM EXPANSION
-		if (iop->cs->core_size > 0x8000)
-			iop->cs->npc += 1;
-	} else if (iop->cs->ins == 0x6581) {
-		// LDB
-		what = "LDB";
-		u = core_read(iop->cs, iop->cs->acc[1] >> 1, CORE_READ);
-		if (iop->cs->acc[1] & 1) {
-			iop->cs->acc[0] = u & 0xff;
-		} else {
-			iop->cs->acc[0] = u >> 8;
-		}
-	} else if (iop->cs->ins == 0x6681) {
-		// STB
-		what = "STB";
-		u = core_read(iop->cs, iop->cs->acc[1] >> 1, CORE_NULL);
-		if (iop->cs->acc[1] & 1) {
-			u &= 0xff00;
-			u |= iop->cs->acc[0] & 0xff;
-		} else {
-			u &= 0x00ff;
-			u |= (iop->cs->acc[0] & 0xff) << 8;
-		}
-		core_write(iop->cs, iop->cs->acc[1] >> 1, u, CORE_MODIFY);
-	} else if (iop->cs->ins == 0x65c1) {
-		// ENABLE HIGH MOBY
-		iop->cs->core_size = 1 << 16;
-		core_setsize(iop->cs->core, iop->cs->core_size);
-	} else {
-		printf("CPU721: 0x%04x 0x%04x %s\n", ioi, iop->cs->ins, what);
+	if (cli->ac == 1 && !strcmp(cli->av[0], "extmem")) {
+		cpu_extmem(cs);
+		cli->ac -= 1;
+		cli->av += 1;
+		return;
+	}
+	if (cli->ac > 1 && !strcmp(cli->av[0], "ident")) {
+		if (cli_n_args(cli, 1))
+			return;
+		cs->ident = strtoul(cli->av[1], NULL, 0);
+		cli->ac -= 2;
+		cli->av += 2;
+		return;
+	}
+	if (cli->ac > 1 && !strcmp(cli->av[0], "core")) {
+		if (cli_n_args(cli, 1))
+			return;
+		cs->core_size = strtoul(cli->av[1], NULL, 0) << 9;
+		if (cs->core_size > 0x8000)
+			cpu_extmem(cs);
+		cli_printf(cli, "Core = %u (%u KB)\n",
+		    cs->core_size, cs->core_size >> 9);
+		cli->ac -= 2;
+		cli->av += 2;
+		return;
 	}
 }
-
-static void
-dev_cpu_init(void)
-{
-	unsigned u, acc, flg;
-	const char *iflg;
-
-	for (acc = 0; acc < 4; acc++) {
-		for (flg = 0; flg < 4; flg++) {
-			if (flg == 1)
-				iflg = ",IEN";
-			else if (flg == 2)
-				iflg = ",IDS";
-			else
-				iflg = "";
-			u = acc << 11;
-			u |= flg << 6;
-
-			u = acc << 11;
-			disass_magic(0x6102 | u, "@IDFY  %d", acc);
-			disass_magic(0x6581 | u, "@LDB   %d", acc);
-			disass_magic(0x6681 | u, "@STB   %d", acc);
-			disass_magic(0x6502 | u, "@BMOVE %d", acc);
-			disass_magic(0x6542 | u, "@WMOVE %d", acc);
-			disass_magic(0x6582 | u, "@SCHEL %d", acc);
-			disass_magic(0x65c2 | u, "@SFREE %d", acc);
-			disass_magic(0x6602 | u, "@LINK  %d", acc);
-			disass_magic(0x6642 | u, "@REMEL %d", acc);
-			disass_magic(0x6682 | u, "@PLINK %d", acc);
-			disass_magic(0x66c2 | u, "@FETCH %d", acc);
-			disass_magic(0x6702 | u, "@TKADD %d", acc);
-			disass_magic(0x6742 | u, "@TKVAL %d", acc);
-			disass_magic(0x6782 | u, "@COMP  %d", acc);
-		}
-	}
-}
-
-#endif

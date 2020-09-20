@@ -1,6 +1,6 @@
 
 OBJS	= main.o cli.o core.o autorom.o
-OBJS	+= cpu.o cpu_nova.o cpu_timing.o
+OBJS	+= cpu.o cpu_nova.o cpu_extmem.o cpu_720.o cpu_timing.o
 OBJS	+= cpu_exec.o interrupt.o device.o
 OBJS	+= elastic.o elastic_fd.o elastic_tcp.o elastic_match.o
 OBJS	+= callout.o
@@ -33,6 +33,9 @@ test:	rc3600
 	./rc3600 \
 		-T /critter/_36 \
 		-t \
+		'cpu model rc3803' \
+		'cpu core 128' \
+		'cpu ident 2' \
 		'rtc 0' \
 		'rtc trace 1' \
 		'tty telnet :2100' \
@@ -46,6 +49,10 @@ test:	rc3600
 		'autoload' \
 		'tty match wait' \
 		'tty << ""' \
+		'tty match xon' \
+		'tty << "LIST/CORE"' \
+		'tty match xon' \
+		'exit' \
 		2>&1 | tee /critter/_3
 
 nakskov: rc3600
@@ -215,6 +222,13 @@ timer2:	rc3600
 		'stop' \
 		2>&1 | tee /critter/_3
 
+cpu721: rc3600
+	python3 ./ptr2tti1.py \
+		${PTRDIR}/RCSL_52_AA_900_RC3600_CPU_720_EXT_TEST.bin \
+		_tti1
+	./rc3600 \
+		-T /critter/_36 \
+		< cpu720_ext_text.cli
 
 cpu720:	rc3600
 	python3 ./ptr2tti1.py \
@@ -222,18 +236,132 @@ cpu720:	rc3600
 		_tti1
 	./rc3600 \
 		-T /critter/_36 \
-		-t \
-		'ptr trace 2' \
-		'cpu model rc3600' \
+		'cpu model rc3803' \
 		'cpu model' \
+		'cpu extmem' \
+		'cpu core 128' \
 		'tty 1 trace 1' \
 		'tty 1 cps 10000' \
 		'tty 1 < _tti1' \
-		'rtc 0' \
+		'rtc trace 1' \
 		'tty telnet :2100' \
 		'tty baud 9600' \
 		'switch 0000050' \
 		'autoload' \
+		'tty match byte 0x1f' \
+		'switch 0000000' \
+		\
+		'tty match expect "PC 016443"' \
+		'tty match byte 0x07' \
+		'tty match expect "SWITCH 12 CONTINUE (Y/N): Y ?"' \
+		'tty match byte 0x07' \
+		'tty << "Y"' \
+		\
+		'tty match expect "PC 016443"' \
+		'tty match byte 0x07' \
+		'tty match expect "SWITCH 12 CONTINUE (Y/N): Y ?"' \
+		'tty match byte 0x07' \
+		'tty << "Y"' \
+		\
+		'tty match expect "PC 016443"' \
+		'tty match byte 0x07' \
+		'tty match expect "SWITCH 12 CONTINUE (Y/N): Y ?"' \
+		'tty match byte 0x07' \
+		'tty << "Y"' \
+		\
+		'tty match expect "PC 016443"' \
+		'tty match byte 0x07' \
+		'tty match expect "SWITCH 12 CONTINUE (Y/N): Y ?"' \
+		'tty match byte 0x07' \
+		'tty << "Y"' \
+		\
+		'tty match expect "PC 016443"' \
+		'tty match byte 0x07' \
+		'tty match expect "SWITCH 12 CONTINUE (Y/N): Y ?"' \
+		'tty match byte 0x07' \
+		'tty << "Y"' \
+		\
+		'tty match expect "PC 016630"' \
+		'tty match byte 0x07' \
+		'tty match expect "SWITCH 12 CONTINUE (Y/N): Y ?"' \
+		'tty match byte 0x07' \
+		'tty << "Y"' \
+		\
+		'tty match expect "PC 016630"' \
+		'tty match byte 0x07' \
+		'tty match expect "SWITCH 12 CONTINUE (Y/N): Y ?"' \
+		'tty match byte 0x07' \
+		'tty << "Y"' \
+		\
+		'tty match expect "PC 016630"' \
+		'tty match byte 0x07' \
+		'tty match expect "SWITCH 12 CONTINUE (Y/N): Y ?"' \
+		'tty match byte 0x07' \
+		'tty << "Y"' \
+		\
+		'tty match expect "PC 016630"' \
+		'tty match byte 0x07' \
+		'tty match expect "SWITCH 12 CONTINUE (Y/N): Y ?"' \
+		'tty match byte 0x07' \
+		'tty << "Y"' \
+		\
+		'tty match expect "PC 016630"' \
+		'tty match byte 0x07' \
+		'tty match expect "SWITCH 12 CONTINUE (Y/N): Y ?"' \
+		'tty match byte 0x07' \
+		'tty << "Y"' \
+		\
+		'tty match expect "PC 016630"' \
+		'tty match byte 0x07' \
+		'tty match expect "SWITCH 12 CONTINUE (Y/N): Y ?"' \
+		'tty match byte 0x07' \
+		'tty << "Y"' \
+		\
+		'tty match expect "PC 016630"' \
+		'tty match byte 0x07' \
+		'tty match expect "SWITCH 12 CONTINUE (Y/N): Y ?"' \
+		'tty match byte 0x07' \
+		'tty << "Y"' \
+		\
+		'tty match expect "PC 017062"' \
+		'tty match byte 0x07' \
+		'tty match expect "SWITCH 12 CONTINUE (Y/N): Y ?"' \
+		'tty match byte 0x07' \
+		'tty << "Y"' \
+		\
+		'tty match expect "PC 017062"' \
+		'tty match byte 0x07' \
+		'tty match expect "SWITCH 12 CONTINUE (Y/N): Y ?"' \
+		'tty match byte 0x07' \
+		'tty << "Y"' \
+		\
+		'tty match expect "PC 017062"' \
+		'tty match byte 0x07' \
+		'tty match expect "SWITCH 12 CONTINUE (Y/N): Y ?"' \
+		'tty match byte 0x07' \
+		'tty << "Y"' \
+		\
+		'tty match expect "PC 017062"' \
+		'tty match byte 0x07' \
+		'tty match expect "SWITCH 12 CONTINUE (Y/N): Y ?"' \
+		'tty match byte 0x07' \
+		'tty << "Y"' \
+		\
+		'tty match expect "PC 017062"' \
+		'tty match byte 0x07' \
+		'tty match expect "SWITCH 12 CONTINUE (Y/N): Y ?"' \
+		'tty match byte 0x07' \
+		'tty << "Y"' \
+		\
+		'tty match expect "PC 017062"' \
+		'tty match byte 0x07' \
+		'tty match expect "SWITCH 12 CONTINUE (Y/N): Y ?"' \
+		'tty match byte 0x07' \
+		'tty << "Y"' \
+		\
+		'tty match expect "SWITCH 12 CONTINUE (Y/N): Y ?"' \
+		'tty match byte 0x07' \
+		'stop' \
 		2>&1 | tee /critter/_3
 
 
@@ -256,27 +384,29 @@ rc3600:	${OBJS}
 clean:
 	rm -f *.o *.tmp rc3600
 
-main.o:			rc3600.h main.c
-cpu.o:			rc3600.h cpu.c
-cpu_nova.o:		rc3600.h cpu_nova.c
+autorom.o:		rc3600.h autorom.c
+callout.o:		rc3600.h callout.c
 cli.o:			rc3600.h vav.h cli.c
 core.o:			rc3600.h core.c
-autorom.o:		rc3600.h autorom.c
-device.o:		rc3600.h device.c
+cpu.o:			rc3600.h cpu.c
+cpu_720.o:		rc3600.h cpu_720.c
 cpu_exec.o:		rc3600.h cpu_exec.c
+cpu_extmem.o:		rc3600.h cpu_extmem.c
+cpu_nova.o:		rc3600.h cpu_nova.c
 cpu_timing.o:		rc3600.h cpu_timing.c
-interrupt.o:		rc3600.h interrupt.c
-callout.o:		rc3600.h callout.c
+device.o:		rc3600.h device.c
+disass.o:		rc3600.h disass.c
 elastic.o:		rc3600.h elastic.h elastic.c
 elastic_fd.o:		rc3600.h elastic.h elastic_fd.c
 elastic_match.o:	rc3600.h elastic.h elastic_match.c
 elastic_tcp.o:		rc3600.h elastic.h elastic_tcp.c
-disass.o:		rc3600.h disass.c
-vav.o:			rc3600.h vav.h
-io_tty.o:		rc3600.h elastic.h io_tty.c
+interrupt.o:		rc3600.h interrupt.c
+io_amx.o:		rc3600.h elastic.h io_amx.c
 io_dkp.o:		rc3600.h io_dkp.c
-io_rtc.o:		rc3600.h io_rtc.c
+io_fdd.o:		rc3600.h io_fdd.c
 io_ptp.o:		rc3600.h elastic.h io_ptp.c
 io_ptr.o:		rc3600.h elastic.h io_ptr.c
-io_fdd.o:		rc3600.h io_fdd.c
-io_amx.o:		rc3600.h elastic.h io_amx.c
+io_rtc.o:		rc3600.h io_rtc.c
+io_tty.o:		rc3600.h elastic.h io_tty.c
+main.o:			rc3600.h main.c
+vav.o:			rc3600.h vav.h

@@ -43,10 +43,12 @@ static void v_matchproto_(iodev_io_f)
 no_dev_io_ins(struct iodev *iop, uint16_t ioi, uint16_t *reg)
 {
 
+if (0) {
 	trace(iop->cs,
 	    "Unclaimed IO: 0x%04x dev=0x%x\n",
 	    iop->cs->ins, iop->cs->ins & 0x3f);
 	trace_state(iop->cs);
+}
 	iop->ireg_a = 0;
 	iop->ireg_b = 0;
 	iop->ireg_c = 0;

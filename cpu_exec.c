@@ -209,16 +209,16 @@ EA(struct rc3600 *cs)
 	default:
 		assert(0 == __LINE__);
 	}
-	if (cs->core_size <= 0x8000)
+	if (!cs->ext_core)
 		t &= 0x7fff;
 	/* @ bit */
 	i = cs->ins & 0x400;
 	while (i) {
 		cs->duration += cs->timing->time_indir_adr;
 		if (cs->do_trace > 1)
-			trace(cs, "CORE 0x%04x = 0x%04x\n", t, core_read(cs, t, CORE_NULL));
+			trace(cs, "EA 0x%04x = 0x%04x\n", t, core_read(cs, t, CORE_NULL));
 		u = core_read(cs, t, CORE_READ | CORE_INDIR);
-		if (cs->core_size <= 0x8000)
+		if (!cs->ext_core)
 			i = u & 0x8000;
 		else
 			i = 0;
@@ -229,12 +229,12 @@ EA(struct rc3600 *cs)
 			cs->duration += cs->timing->time_auto_idx;
 			core_write(cs, t, --u, CORE_MODIFY);
 		}
-		if (cs->core_size <= 0x8000)
+		if (!cs->ext_core)
 			u &= 0x7fff;
 		t = u;
 	}
 	if (cs->do_trace > 1)
-		trace(cs, "CORE 0x%04x = 0x%04x\n", t, core_read(cs, t, CORE_NULL));
+		trace(cs, "EA 0x%04x = 0x%04x\n", t, core_read(cs, t, CORE_NULL));
 	return (t);
 }
 
