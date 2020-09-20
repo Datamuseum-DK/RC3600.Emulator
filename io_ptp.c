@@ -82,7 +82,7 @@ new_ptp(struct iodev *iop1, struct iodev *iop2)
 	tp->ep->bits_per_sec = 8 * 1000;
 	AN(tp->ep);
 	tp->iop->priv = tp;
-	install_dev(tp->iop, dev_ptp_thread);
+	cpu_add_dev(tp->iop, dev_ptp_thread);
 	return (tp);
 }
 

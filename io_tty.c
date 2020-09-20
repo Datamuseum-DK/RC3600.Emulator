@@ -48,14 +48,16 @@ dev_tti_thread(void *priv)
 {
 	struct iodev *iod = priv;
 	struct io_tty *tp = iod->priv;
-	char buf[1];
+	uint8_t buf[1];
 	ssize_t sz;
 
 	while (1) {
+		if (tp->ep->bits_per_sec > 0)
+			usleep(nsec_per_char(tp->ep) / 1000);
 		sz = elastic_get(tp->ep, buf, 1);
 		assert(sz == 1);
 		AZ(pthread_mutex_lock(&iod->mtx));
-		dev_trace(tp->i_dev, "TTI 0x%02x\n", buf[0]);
+		dev_trace(tp->i_dev, "%s 0x%02x\n", iod->name, buf[0]);
 		iod->ireg_a = buf[0];
 		iod->busy = 0;
 		iod->done = 1;
@@ -116,12 +118,12 @@ new_tty(struct iodev *iop1, struct iodev *iop2)
 	tp->ep->bits_per_sec = 2400;
 
 	tp->i_dev->priv = tp;
-	install_dev(tp->i_dev, dev_tti_thread);
+	cpu_add_dev(tp->i_dev, dev_tti_thread);
 
 	tp->o_dev->priv = tp;
 	tp->o_dev->io_func = dev_tto_iofunc;
 
-	install_dev(tp->o_dev, NULL);
+	cpu_add_dev(tp->o_dev, NULL);
 	return (tp);
 }
 

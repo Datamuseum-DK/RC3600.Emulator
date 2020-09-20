@@ -145,7 +145,7 @@ new_amx(struct iodev *iop, struct iodev *iop2)
 	}
 	ap->iop->io_func = dev_amx_insfunc;
 	ap->iop->priv = ap;
-	install_dev(iop, NULL);
+	cpu_add_dev(iop, NULL);
 	return (ap);
 }
 

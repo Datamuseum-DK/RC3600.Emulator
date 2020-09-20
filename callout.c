@@ -47,6 +47,19 @@ struct callout_how {
 	callout_func_f			*func;
 };
 
+/**********************************************************************/
+
+nanosec
+now(void)
+{
+	struct timespec ts;
+
+	AZ(clock_gettime(CLOCK_REALTIME_FAST, &ts));
+	return (ts.tv_sec * 1000000000L + ts.tv_nsec);
+}
+
+/**********************************************************************/
+
 static void
 callout_func_wake_dev(const struct callout *co)
 {

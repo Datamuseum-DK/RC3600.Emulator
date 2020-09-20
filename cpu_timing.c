@@ -29,18 +29,19 @@
  *
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <strings.h>
 #include "rc3600.h"
 
 /*
- * The values are from 014-000631 page F-1 of 4 "NOVA".
- * They match 015-000009-09 page D12 "Nova".
+ * NOVA
+ * ----
+ *
+ * From 014-000631 page F-1 of 4 "NOVA".
+ *
+ * Matches 015-000009-09 page D12 "Nova".
+ *
  * The time_jsr number looks strange, but both sources provide it.
  */
-static const struct ins_timing nova_timing = {
-	.model = "NOVA",
+const struct ins_timing nova_timing = {
 	.time_lda = 5200,
 	.time_sta = 5500,
 	.time_isz = 5200,
@@ -58,12 +59,16 @@ static const struct ins_timing nova_timing = {
 };
 
 /*
- * The values are from 014-000631 page F-1 of 4 "1200 SERIES"
- * They match 015-000009-09 page D12 "1200 Series".
- * They match RCSL_44_RT_1558_RC3600_INSTRUCTION_TIMER_TEST "NOVA 1200 12"
+ * NOVA 1200
+ * ---------
+ *
+ * From 014-000631 page F-1 of 4 "1200 SERIES"
+ *
+ * Matches 015-000009-09 page D12 "1200 Series".
+ *
+ * Matches RCSL_44_RT_1558_RC3600_INSTRUCTION_TIMER_TEST "NOVA 1200 12"
  */
-static const struct ins_timing nova1200_timing = {
-	.model = "NOVA 1200",
+const struct ins_timing nova1200_timing = {
 	.time_lda = 2550,
 	.time_sta = 2550,
 	.time_isz = 3150,
@@ -83,12 +88,16 @@ static const struct ins_timing nova1200_timing = {
 };
 
 /*
- * The values are from 014-000631 page F-1 of 4 "800, 820, 840"
- * They match 015-000009-09 page D12 "800 Series".
+ * NOVA 800
+ * --------
+ *
+ * From 014-000631 page F-1 of 4 "800, 820, 840"
+ *
+ * Matches 015-000009-09 page D12 "800 Series".
+ *
  * No match in RCSL_44_RT_1558_RC3600_INSTRUCTION_TIMER_TEST
  */
-static const struct ins_timing nova800_timing = {
-	.model = "NOVA 800",
+const struct ins_timing nova800_timing = {
 	.time_lda = 1600,
 	.time_sta = 1600,
 	.time_isz = 1800,
@@ -109,14 +118,18 @@ static const struct ins_timing nova800_timing = {
 };
 
 /*
- * The values are from 014-000631 page F-1 of 4 "NOVA 2, 16K"
+ * NOVA 2
+ * ------
+ *
+ * From 014-000631 page F-1 of 4 "NOVA 2, 16K"
+ *
  * No match in 015-000009-09 page D12
- * RCSL_44_RT_1558_RC3600_INSTRUCTION_TIMER_TEST "NOVA 2 - 17K 20"
- * matches apart from "ISZ CWORK" and "DSZ CWORK" which measure 2100
- * but expect 2300.
+ *
+ * Matches RCSL_44_RT_1558_RC3600_INSTRUCTION_TIMER_TEST "NOVA 2 - 17K 20"
+ * apart from "ISZ CWORK" and "DSZ CWORK" which measure 2100 but expect 2300.
  */
-static const struct ins_timing nova2_timing = {
-	.model = "NOVA 2",
+
+const struct ins_timing nova2_timing = {
 	.time_lda = 2000,
 	.time_sta = 2000,
 	.time_isz = 2100,
@@ -137,12 +150,15 @@ static const struct ins_timing nova2_timing = {
 };
 
 /*
- * RCSL-42-I-1008 RC3803 CPU Programmer's Guide, p126
+ * RC3608
+ * ------
+ *
+ * RCSL-42-I-1008 RC3803 CPU Programmer's Guide, p126 "RC3608 32K memory
+ *
  * Matches RCSL_44_RT_1558_RC3600_INSTRUCTION_TIMER_TEST "RC3603 - 32K 22"
- * But with a 50nsec delta a lot of places.
+ * with the deltas seen below.
  */
-static const struct ins_timing rc3608_timing = {
-	.model = "RC3608",
+const struct ins_timing rc3608_timing = {
 	.time_lda = 1600,
 	.time_sta = 1600,
 	.time_isz = 2400,
@@ -165,12 +181,15 @@ static const struct ins_timing rc3608_timing = {
 };
 
 /*
- * RCSL-42-I-1008 RC3803 CPU Programmer's Guide, p126
+ * RC3609
+ * ------
+ *
+ * RCSL-42-I-1008 RC3803 CPU Programmer's Guide, p126 "RC3609 16K memory"
+ *
  * Matches RCSL_44_RT_1558_RC3600_INSTRUCTION_TIMER_TEST "RC3603 - 16K 20"
- * But with a 50nsec delta a lot of places.
+ * with the deltas seen below.
  */
-static const struct ins_timing rc3609_timing = {
-	.model = "RC3609",
+const struct ins_timing rc3609_timing = {
 	.time_lda = 1400,
 	.time_sta = 1400 + 50,
 	.time_isz = 2100 + 50,
@@ -191,38 +210,3 @@ static const struct ins_timing rc3609_timing = {
 	.time_io_scp = 0,
 	.time_io_inta = 1810 + 140,
 };
-
-const struct ins_timing * const ins_timings[] = {
-	&rc3609_timing,
-	&rc3608_timing,
-	&nova_timing,
-	&nova1200_timing,
-	&nova800_timing,
-	&nova2_timing,
-	NULL
-};
-
-const struct ins_timing *
-get_timing(const char *cpu)
-{
-	int i, rv = 0;
-
-#define TIMING_MACRO(fld, x) \
-		if (x && ins_timings[i]->fld == 0) { \
-			fprintf(stderr, "CPU %s lacks %s timing\n", \
-			    ins_timings[i]->model, #fld); \
-			rv++; \
-		}
-
-	for (i = 0; ins_timings[i] != NULL; i++) {
-		TIMINGS
-	}
-#undef TIMING_MACRO
-	if (rv)
-		exit(2);
-
-	for (i = 0; ins_timings[i] != NULL; i++)
-		if (!strcasecmp(cpu, ins_timings[i]->model))
-			return (ins_timings[i]);
-	return (NULL);
-}

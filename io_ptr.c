@@ -79,10 +79,10 @@ new_ptr(struct iodev *iop1, struct iodev *iop2)
 	AN(tp);
 	tp->iop = iop1;
 	tp->ep = elastic_new(tp->iop->cs, O_RDONLY);
-	tp->ep->bits_per_sec = 8 * 2000;
+	tp->ep->bits_per_sec = 8 * 1000;
 	AN(tp->ep);
 	tp->iop->priv = tp;
-	install_dev(tp->iop, dev_ptr_thread);
+	cpu_add_dev(tp->iop, dev_ptr_thread);
 	return (tp);
 }
 

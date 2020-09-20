@@ -103,11 +103,11 @@ new_rtc(struct iodev *iop1, struct iodev *iop2)
 
 	AN(iop1);
 	AZ(iop2);
-	if (0) {
+	if (1) {
 		iop1->io_func = dev_rtc_iofunc;
-		install_dev(iop1, NULL);
+		cpu_add_dev(iop1, NULL);
 	} else {
-		install_dev(iop1, dev_rtc_thread);
+		cpu_add_dev(iop1, dev_rtc_thread);
 	}
 	iop1->priv = iop1;
 	return (iop1);

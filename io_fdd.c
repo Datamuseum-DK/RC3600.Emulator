@@ -136,7 +136,7 @@ new_fdd(struct iodev *iop1, struct iodev *iop2)
 
 	fp->iop->io_func = dev_fdd_iofunc;
 	fp->iop->priv = fp;
-	install_dev(fp->iop, NULL);
+	cpu_add_dev(fp->iop, NULL);
 	return (fp);
 }
 

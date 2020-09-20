@@ -88,6 +88,13 @@ elastic_fd_use(struct elastic *ep, int fd, int mode)
 	else
 		assert(ep->mode == O_RDWR || ep->mode == mode);
 
+	if (mode != O_WRONLY) {
+		elastic_inject(ep, "", 1);
+		elastic_inject(ep, "", 1);
+		elastic_inject(ep, "", 1);
+		elastic_inject(ep, "", 1);
+		elastic_inject(ep, "", 1);
+	}
 	efp = calloc(1, sizeof *efp);
 	AN(efp);
 	efp->fd = fd;

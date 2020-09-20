@@ -55,8 +55,11 @@ struct callout;
 TAILQ_HEAD(core_handlers, core_handler);
 
 typedef int64_t			nanosec;
+typedef void ins_exec_f(struct rc3600 *);
+typedef void *iodev_thr(void *);
 
 struct rc3600 {
+	const char		*cpu_model;
 	pthread_mutex_t		run_mtx;
 	pthread_mutex_t		running_mtx;
 	pthread_cond_t		run_cond;
@@ -73,6 +76,7 @@ struct rc3600 {
 	struct iodev		*iodevs[64];
 	struct iodev		*nodev;
 	const struct ins_timing	*timing;
+	ins_exec_f		*ins_exec[1 << 16];
 
 	struct core		*core;
 	unsigned		core_size;
@@ -97,12 +101,26 @@ struct rc3600 {
 	TAILQ_HEAD(, callout)	callouts;
 };
 
-void rc3600_exec(struct rc3600 *);
 
-void cpu_start(struct cli *);
+
+
+/* CPU ****************************************************************/
+
+ins_exec_f rc3600_exec;
+
+struct rc3600 *cpu_new(void);
+void cpu_add_dev(struct iodev *iop, iodev_thr *thr);
+void cpu_start(struct rc3600 *);
 void cpu_stop(struct rc3600 *cs);
 void cpu_instr(struct rc3600 *cs);
+void cpu_nova(struct rc3600 *cs);
 
+extern const struct ins_timing nova_timing;
+extern const struct ins_timing nova1200_timing;
+extern const struct ins_timing nova800_timing;
+extern const struct ins_timing nova2_timing;
+extern const struct ins_timing rc3608_timing;
+extern const struct ins_timing rc3609_timing;
 
 /* CLI ****************************************************************/
 
@@ -174,6 +192,7 @@ uint16_t intr_inta(struct rc3600 *cs);
 
 /* Callout ************************************************************/
 
+nanosec now(void);
 void callout_dev_sleep(struct iodev *, nanosec);
 void callout_dev_is_done(struct iodev *iop, nanosec when);
 void callout_dev_is_done_abs(struct iodev *iop, nanosec when);
@@ -184,26 +203,21 @@ nanosec callout_poll(struct rc3600 *cs);
 
 void iodev_init(struct rc3600 *);
 
-typedef void iodev_init_f(struct iodev *);
 typedef void iodev_io_f(struct iodev *, uint16_t ioi, uint16_t *reg);
 typedef void iodev_skp_f(struct iodev *, uint16_t ioi);
 
 iodev_io_f std_io_ins;
 iodev_skp_f std_skp_ins;
 
-typedef void *iodev_thr(void *);
 
 typedef void *new_dev_f(struct iodev *, struct iodev *);
 void *cli_dev_get_unit(struct cli *, const char *, const char *, new_dev_f *);
 
 int cli_dev_trace(struct iodev *iop, struct cli *cli);
 
-void install_dev(struct iodev *iop, iodev_thr *thr);
-
 struct iodev {
 	char			name[6];
 	struct rc3600		*cs;
-	iodev_init_f		*init_func;
 	iodev_io_f		*io_func;
 	iodev_skp_f		*skp_func;
 	void			*priv;		/* private (instance) data */
@@ -280,13 +294,10 @@ struct iodev {
 	TIMING_MACRO(time_io_inta, 1)
 
 struct ins_timing {
-	const char		*model;
 #define TIMING_MACRO(fld, x)	nanosec (fld);
 	TIMINGS
 #undef	TIMING_MACRO
 };
-
-const struct ins_timing *get_timing(const char *cpu);
 
 /* AUTOROM ************************************************************/
 

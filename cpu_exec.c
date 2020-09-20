@@ -238,7 +238,7 @@ EA(struct rc3600 *cs)
 	return (t);
 }
 
-void
+void v_matchproto_(ins_exec_f)
 rc3600_exec(struct rc3600 *cs)
 {
 	uint16_t t, u, *rpd;
@@ -246,11 +246,9 @@ rc3600_exec(struct rc3600 *cs)
 	AN(cs);
 	AN(cs->core);
 	AN(cs->timing);
-	cs->ins = core_read(cs, cs->pc, CORE_READ | CORE_INS);
 	assert(cs->pc || cs->ins);
 
 	assert((cs->carry & ~1) == 0);
-	cs->npc = cs->pc + 1;
 	switch((cs->ins >> 13) & 7) {
 	case 0:	/* DSZ, ISZ, JMP, JSR */
 		t = EA(cs);
@@ -305,9 +303,4 @@ rc3600_exec(struct rc3600 *cs)
 		Insn_ALU(cs);
 		break;
 	}
-	cs->pc = cs->npc;
-	if (cs->core_size <= 0x8000)
-		cs->pc &= 0x7fff;
-	cs->inten[0] = cs->inten[1];
-	cs->inten[1] = cs->inten[2];
 }

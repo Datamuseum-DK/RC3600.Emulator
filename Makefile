@@ -1,12 +1,12 @@
 
 OBJS	= main.o cli.o core.o autorom.o
-OBJS	+= ins_exec.o ins_timing.o interrupt.o device.o
+OBJS	+= cpu.o cpu_nova.o cpu_timing.o
+OBJS	+= cpu_exec.o interrupt.o device.o
 OBJS	+= elastic.o elastic_fd.o elastic_tcp.o elastic_match.o
 OBJS	+= callout.o
 OBJS	+= disass.o
 OBJS	+= vav.o
 
-OBJS	+= io_cpu.o
 OBJS	+= io_tty.o
 OBJS	+= io_dkp.o
 OBJS	+= io_rtc.o
@@ -32,10 +32,11 @@ help:	rc3600
 test:	rc3600
 	./rc3600 \
 		-T /critter/_36 \
+		-t \
 		'rtc 0' \
-		'rtc trace 0' \
+		'rtc trace 1' \
 		'tty telnet :2100' \
-		'tty trace 0' \
+		'tty trace 1' \
 		'ptp > _ptp' \
 		'ptr 0' \
 		'dkp 0 load 0 /home/phk/DDHF/DDHF/Rc3600/DKP/011/__' \
@@ -161,6 +162,11 @@ test2:	rc3600
 
 timer:	rc3600
 	./rc3600 \
+		-T /critter/_36 \
+		'cpu model rc3803' \
+		'cpu model' \
+		'ptr trace 1' \
+		'rtc trace 2' \
 		'tty telnet :2100' \
 		'tty baud 9600' \
 		'switch 0000012' \
@@ -177,6 +183,57 @@ timer:	rc3600
 		'tty << "22"' \
 		'tty match expect "STARTADDR   400 ?  "' \
 		'stop' \
+		2>&1 | tee /critter/_3
+
+timer2:	rc3600
+	python3 ./ptr2tti1.py \
+		${PTRDIR}/RCSL_44_RT_1558_RC3600_INSTRUCTION_TIMER_TEST.bin \
+		_tti1
+	./rc3600 \
+		-T /critter/_36 \
+		'cpu model rc3803' \
+		'cpu model' \
+		'tty 1 trace 1' \
+		'tty 1 cps 10000' \
+		'tty 1 < _tti1' \
+		'ptr trace 1' \
+		'rtc trace 1' \
+		'tty telnet :2100' \
+		'tty baud 9600' \
+		'switch 0000050' \
+		'tty match arm "STARTADDR   400 ?  "' \
+		'autoload' \
+		'tty match wait' \
+		'tty << "401"' \
+		'tty match expect "TTY SPEED  1200 ?  "' \
+		'tty << "9600"' \
+		'tty match expect "INITIALIZED TO    11    ?  "' \
+		'tty << ""' \
+		'tty match expect "INITIALIZED TO    16    ?  "' \
+		'tty << "22"' \
+		'tty match expect "STARTADDR   400 ?  "' \
+		'stop' \
+		2>&1 | tee /critter/_3
+
+
+cpu720:	rc3600
+	python3 ./ptr2tti1.py \
+		${PTRDIR}/RCSL_52_AA_900_RC3600_CPU_720_EXT_TEST.bin \
+		_tti1
+	./rc3600 \
+		-T /critter/_36 \
+		-t \
+		'ptr trace 2' \
+		'cpu model rc3600' \
+		'cpu model' \
+		'tty 1 trace 1' \
+		'tty 1 cps 10000' \
+		'tty 1 < _tti1' \
+		'rtc 0' \
+		'tty telnet :2100' \
+		'tty baud 9600' \
+		'switch 0000050' \
+		'autoload' \
 		2>&1 | tee /critter/_3
 
 
@@ -200,12 +257,14 @@ clean:
 	rm -f *.o *.tmp rc3600
 
 main.o:			rc3600.h main.c
+cpu.o:			rc3600.h cpu.c
+cpu_nova.o:		rc3600.h cpu_nova.c
 cli.o:			rc3600.h vav.h cli.c
 core.o:			rc3600.h core.c
 autorom.o:		rc3600.h autorom.c
 device.o:		rc3600.h device.c
-ins_exec.o:		rc3600.h ins_exec.c
-ins_timing.o:		rc3600.h ins_timing.c
+cpu_exec.o:		rc3600.h cpu_exec.c
+cpu_timing.o:		rc3600.h cpu_timing.c
 interrupt.o:		rc3600.h interrupt.c
 callout.o:		rc3600.h callout.c
 elastic.o:		rc3600.h elastic.h elastic.c
@@ -214,7 +273,6 @@ elastic_match.o:	rc3600.h elastic.h elastic_match.c
 elastic_tcp.o:		rc3600.h elastic.h elastic_tcp.c
 disass.o:		rc3600.h disass.c
 vav.o:			rc3600.h vav.h
-io_cpu.o:		rc3600.h io_cpu.c
 io_tty.o:		rc3600.h elastic.h io_tty.c
 io_dkp.o:		rc3600.h io_dkp.c
 io_rtc.o:		rc3600.h io_rtc.c

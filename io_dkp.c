@@ -310,7 +310,7 @@ new_dkp(struct iodev *iop1, struct iodev *iop2)
 	tp->iop->ireg_a |= 0x40;
 
 	tp->iop->priv = tp;
-	install_dev(tp->iop, dev_dkp_thread);
+	cpu_add_dev(tp->iop, dev_dkp_thread);
 	return (tp);
 }
 

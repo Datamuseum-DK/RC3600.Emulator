@@ -122,6 +122,7 @@ core_write(struct rc3600 *cs, uint16_t addr, uint16_t val, int how)
 
 	AN(cs);
 	AN(how);
+// trace(cs, "W %04x %04x\n", addr, val);
 	AZ(pthread_mutex_lock(&cs->core->mtx));
 	TAILQ_FOREACH(ch, &cs->core->handlers, next) {
 		if (ch->write_func == NULL)
