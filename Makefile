@@ -5,6 +5,7 @@ OBJS	+= cpu_exec.o interrupt.o device.o
 OBJS	+= elastic.o elastic_fd.o elastic_tcp.o elastic_match.o
 OBJS	+= callout.o
 OBJS	+= disass.o
+OBJS	+= domus.o
 OBJS	+= vav.o
 
 OBJS	+= io_tty.o
@@ -36,6 +37,7 @@ test:	rc3600
 		'cpu model rc3803' \
 		'cpu core 128' \
 		'cpu ident 2' \
+		'domus' \
 		'rtc 0' \
 		'rtc trace 1' \
 		'tty telnet :2100' \
@@ -400,6 +402,7 @@ cpu_nova.o:		rc3600.h cpu_nova.c
 cpu_timing.o:		rc3600.h cpu_timing.c
 device.o:		rc3600.h device.c
 disass.o:		rc3600.h disass.c
+domus.o:		rc3600.h domus.c
 elastic.o:		rc3600.h elastic.h elastic.c
 elastic_fd.o:		rc3600.h elastic.h elastic_fd.c
 elastic_match.o:	rc3600.h elastic.h elastic_match.c

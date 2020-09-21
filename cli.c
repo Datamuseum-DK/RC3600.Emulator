@@ -382,6 +382,8 @@ static const struct cli_cmds {
 	{ "fdd",	cli_fdd },
 	{ "amx",	cli_amx },
 
+	{ "domus",	cli_domus },
+
 	{ "switch",	cli_switches },
 	{ "x",		cli_examine },
 	{ "d",		cli_deposit },

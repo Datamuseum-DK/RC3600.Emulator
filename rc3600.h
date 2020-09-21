@@ -317,6 +317,7 @@ cli_func_f cli_ptp;
 cli_func_f cli_ptr;
 cli_func_f cli_fdd;
 cli_func_f cli_amx;
+cli_func_f cli_domus;
 
 /* DISASSEMBLER *******************************************************/
 
