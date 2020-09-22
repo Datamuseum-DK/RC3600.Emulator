@@ -291,6 +291,7 @@ cpu_720_fetch(struct rc3600 *cs)
 	q = core_read(cs, m, CORE_NULL);
 	cs->npc = core_read(cs, cs->npc + (q >> 8), CORE_NULL);
 	cs->acc[0] = q & 0xff;			/* RCSL 52-AA-899, 020342 */
+	cs->acc[1] = q >> 8;			/* By hand */
 	cs->duration += 6700;
 }
 
@@ -318,6 +319,7 @@ cpu_720_takea(struct rc3600 *cs)
 	}
 	cs->acc[0] >>= 2;
 	cs->acc[2] = core_read(cs, 0x20, CORE_NULL); /* RCSL 52-AA-899, 020576 */
+	cs->carry = 0;				/* By hand, reduces diffs */
 }
 
 static void v_matchproto_(ins_exec_f)
