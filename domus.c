@@ -35,18 +35,18 @@
 #include "rc3600.h"
 
 // RCSL-43-GL-7538 MUPAR.01
-static const char *domus_call[] = {
+static const char * const domus_call[] = {
 	[0006002] = "WAIT",
 	[0006003] = "WAITINTERRUPT",
-	[0006004] = "SENDMESSAGE",
+	[0006004] = "SENDMESSAGE|1M2N",
 	[0006005] = "WAITANSWER",
 	[0006006] = "WAITEVENT",
 	[0006007] = "SENDANSWER",
-	[0006010] = "SEARCHITEM",
-	[0006011] = "CLEANPROCESS",
-	[0006012] = "BREAKPROCESS",
-	[0006013] = "STOPPROCESS",
-	[0006014] = "STARTPROCESS",
+	[0006010] = "SEARCHITEM|2N",
+	[0006011] = "CLEANPROCESS|2P",
+	[0006012] = "BREAKPROCESS|2P",
+	[0006013] = "STOPPROCESS|2P",
+	[0006014] = "STARTPROCESS|2P",
 	[0006015] = "RECHAIN",
 
 	[0006164] = "NEXTOPERATION",
@@ -56,8 +56,8 @@ static const char *domus_call[] = {
 	[0006171] = "SETRESERVATION",
 	[0006172] = "SETCONVERSION",
 	[0006173] = "CONBYTE",
-	[0006174] = "GETBYTE",
-	[0006175] = "PUTBYTE",
+	[0006174] = "GETBYTE|1B",
+	[0006175] = "PUTBYTE|0b",
 	[0006176] = "MULTIPLY",
 	[0006177] = "DIVIDE",
 
@@ -69,34 +69,36 @@ static const char *domus_call[] = {
 	[0002171] = ".SETRESERVATION",
 	[0002172] = ".SETCONVERSION",
 	[0002173] = ".CONBYTE",
-	[0002174] = ".GETBYTE",
-	[0002175] = ".PUTBYTE",
+	[0002174] = ".GETBYTE|1B",
+	[0002175] = ".PUTBYTE|0b",
 	[0002176] = ".MULTIPLY",
 	[0002177] = ".DIVIDE",
 
 	[0006232] = "BINDEC",
 	[0006233] = "DECBIN",
-	[0006200] = "GETREC",
-	[0006201] = "PUTREC",
-	[0006202] = "WAITTRANSFER",
-	[0006204] = "TRANSFER",
-	[0006205] = "INBLOCK",
-	[0006206] = "OUTBLOCK",
-	[0006207] = "INCHAR",
+	[0006200] = "GETREC|2Z",
+	[0006201] = "PUTREC|2Z",
+	[0006202] = "WAITTRANSFER|2Z",
+	[0006204] = "TRANSFER|2Z",
+	[0006205] = "INBLOCK|2Z",
+	[0006206] = "OUTBLOCK|2Z",
+	[0006207] = "INCHAR|2Z",
 	[0006210] = "FREESHARE",
-	[0006211] = "OUTSPACE",
-	[0006212] = "OUTCHAR",
-	[0006213] = "OUTNL",
-	[0006214] = "OUTEND",
-	[0006215] = "OUTTEXT",
-	[0006216] = "OUTOCTAL",
-	[0006217] = "SETPOSITION",
-	[0006220] = "CLOSE",
-	[0006221] = "OPEN",
-	[0006223] = "INNAME",
-	[0006222] = "WAITZONE",
+	[0006211] = "OUTSPACE|2Z",
+	[0006212] = "OUTCHAR|2Z1b",
+	[0006213] = "OUTNL|2Z",
+	[0006214] = "OUTEND|2Z1b",
+	[0006215] = "OUTTEXT|2Z0s",
+	[0006216] = "OUTOCTAL|2Z",
+	[0006217] = "SETPOSITION|2Z",
+	[0006220] = "CLOSE|2Z",
+	[0006221] = "OPEN|2Z",
+	[0006223] = "INNAME|2Z",
+	[0006222] = "WAITZONE|2Z",
 	[0006224] = "MOVE",
 	[0006225] = "INTERPRETE",
+	[0006236] = "TAKEA",
+	[0006237] = "TAKEV",
 
 	[0002200] = ".GETREC",
 	[0002201] = ".PUTREC",
@@ -117,11 +119,8 @@ static const char *domus_call[] = {
 	[0002220] = ".CLOSE",
 	[0002221] = ".OPEN",
 
-	[0000226] = "INTGIVEUP",
-	[0000230] = "INTBREAK",
-
-	[0006332] = "NEWCAT",
-	[0006333] = "FREECAT",
+	[0006332] = "NEWCAT|2Z",
+	[0006333] = "FREECAT|2Z",
 
 	[0006334] = "CDELAY",
 	[0006335] = "WAITSEM",
@@ -134,11 +133,11 @@ static const char *domus_call[] = {
 	[0006344] = "SIGCHAINED",
 	[0006345] = "CPASS",
 
-	[0006346] = "CREATEENTRY",
-	[0006347] = "LOOKUPENTRY",
-	[0006350] = "CHANGEENTRY",
-	[0006351] = "REMOVEENTRY",
-	[0006352] = "INITCATALOG",
+	[0006346] = "CREATEENTRY|2Z",
+	[0006347] = "LOOKUPENTRY|2Z",
+	[0006350] = "CHANGEENTRY|2Z",
+	[0006351] = "REMOVEENTRY|2Z",
+	[0006352] = "INITCATALOG|2Z",
 	[0006353] = "SETENTRY",
 
 	[0006254] = "COMON",
@@ -152,109 +151,145 @@ static const char *domus_call[] = {
 	[0006267] = "CTOP",
 };
 
-static unsigned ndomus_call = sizeof(domus_call) / sizeof(domus_call[0]);
+static const unsigned ndomus_call = sizeof(domus_call) / sizeof(domus_call[0]);
 
-static const char *
-getname(struct rc3600 *cs, uint16_t na)
+static uint16_t
+getbyte(struct rc3600 *cs, uint16_t baddr)
 {
-	static char buf[7];
 	uint16_t u;
 
-	u = core_read(cs, na, CORE_NULL);
-	buf[0] = u >> 8;
-	buf[1] = u & 0xff;
-	u = core_read(cs, na + 1, CORE_NULL);
-	buf[2] = u >> 8;
-	buf[3] = u & 0xff;
-	u = core_read(cs, na + 2, CORE_NULL);
-	buf[4] = u >> 8;
-	buf[5] = u & 0xff;
-	buf[6] = '\0';
-	return (buf);
-}
-
-
-static const char *
-cur(struct rc3600 *cs)
-{
-	static char buf[7];
-	uint16_t na, u;
-
-	na = core_read(cs, 0x0020, CORE_NULL);
-	na += 4;
-	u = core_read(cs, na, CORE_NULL);
-	buf[0] = u >> 8;
-	buf[1] = u & 0xff;
-	u = core_read(cs, na + 1, CORE_NULL);
-	buf[2] = u >> 8;
-	buf[3] = u & 0xff;
-	u = core_read(cs, na + 2, CORE_NULL);
-	buf[4] = u >> 8;
-	buf[5] = u & 0xff;
-	buf[6] = '\0';
-	return (buf);
+	u = core_read(cs, baddr >> 1, CORE_READ);
+	if (baddr & 1)
+		return (u & 0xff);
+	return (u >> 8);
 }
 
 static char *
-ascii(uint16_t u)
+ascii(char *p, const char *e, uint16_t a)
 {
-	static char buf[2];
+	a &= 0xff;
+	switch (a) {
+	case '\0':
+		p += snprintf(p, e - p, "\\0");
+		return (p);
+	case '\n':
+		p += snprintf(p, e - p, "\\n");
+		return (p);
+	case '\r':
+		p += snprintf(p, e - p, "\\r");
+		return (p);
+	default:
+		if (0x20 < a && a < 0x7f)
+			p += snprintf(p, e - p, "%c", a);
+		else
+			p += snprintf(p, e - p, "\\x%02x", a);
+		return (p);
+	}
+}
 
-	if (u < 0x20 || u > 0x7e)
-		return "☐";
-	buf[0] = u;
-	buf[1] = '\0';
-	return (buf);
+static char *
+wname(struct rc3600 *cs, char *p, const char *e, uint16_t a)
+{
+	int i;
+	char *q = p;
+	uint16_t u;
+
+	*p++ = '"';
+	for (i = 0; i < 3; i++) {
+		u = core_read(cs, a, CORE_NULL);
+		if (!(u >> 8))
+			break;
+		p = ascii(p, e, u >> 8);
+		if (!(u & 0xff))
+			break;
+		p = ascii(p, e, u);
+		a++;
+	}
+	*p++ = '"';
+	while (p < q + 8)
+		*p++ = ' ';
+	return (p);
 }
 
 static void v_matchproto_(ins_exec_f)
 exec_domus(struct rc3600 *cs)
 {
+	char buf[BUFSIZ], *p, *e;
+	const char *n;
+	uint16_t v, w;
+
 	AN(cs);
 	assert(cs->ins < ndomus_call);
-	AN(domus_call[cs->ins]);
-	trace(cs, "DOMUS CUR %-6s %s\n", cur(cs), domus_call[cs->ins]);
+	n = domus_call[cs->ins];
+	AN(n);
+	p = buf;
+	e = buf + sizeof buf;
+	p += snprintf(p, e - p, "DOMUS 0x%04x 0x%04x 0x%04x ",
+	    cs->acc[0], cs->acc[1], cs->acc[2]);
+	v = core_read(cs, 0x0020, CORE_NULL);
+	p = wname(cs, p, e, v + 4);
+	*p++ = ' ';
+	while (*n != '\0' && *n != '|')
+		*p++ = *n++;
+	*p = '\0';
+	for (;*n != '\0';n++) {
+		switch (*n) {
+		case '|':
+			break;
+		case '0': v = cs->acc[0]; break;
+		case '1': v = cs->acc[1]; break;
+		case '2': v = cs->acc[2]; break;
+		case '3': v = cs->acc[3]; break;
+		case 'b':
+			p += snprintf(p, e - p, " b 0x%02x '", v);
+			p = ascii(p, e, v);
+			p += snprintf(p, e - p, "'");
+			break;
+		case 'B':
+			w = getbyte(cs, v);
+			p += snprintf(p, e - p, " B 0x%02x '", w);
+			p = ascii(p, e, w);
+			p += snprintf(p, e - p, "'");
+			break;
+		case 'M':
+			p += snprintf(p, e - p,
+			    " M [ 0x%04x 0x%04x 0x%04x 0x%04x ]",
+			    core_read(cs, v, CORE_NULL),
+			    core_read(cs, v + 1, CORE_NULL),
+			    core_read(cs, v + 2, CORE_NULL),
+			    core_read(cs, v + 3, CORE_NULL)
+			);
+			break;
+		case 'N':
+			p += snprintf(p, e - p, " N ");
+			p = wname(cs, p, e, v);
+			break;
+		case 'P':
+			p += snprintf(p, e - p, " P ");
+			p = wname(cs, p, e, v + 4);
+			break;
+		case 's':
+			p += snprintf(p, e - p, " s  \"");
+			while (1) {
+				w = getbyte(cs, v);
+				if (!w)
+					break;
+				p = ascii(p, e, w);
+			}
+			p += snprintf(p, e - p, "\"");
+			break;
+		case 'Z':
+			p += snprintf(p, e - p, " Z 0x%04x ", v);
+			p = wname(cs, p, e, v);
+			break;
+		default:
+			assert(0 == __LINE__);
+		}
+	}
+	*p = '\0';
+	trace(cs, "%s\n", buf);
 	rc3600_exec(cs);
 }
-
-static void v_matchproto_(ins_exec_f)
-exec_domus_sendm(struct rc3600 *cs)
-{
-	uint16_t preacc[4];
-
-	memcpy(preacc, cs->acc, sizeof preacc);
-	rc3600_exec(cs);
-	trace(cs,
-	    "DOMUS CUR %-6s SENDMESSAGE  [ %04x %04x %04x %04x ] -> '%s' = %04x\n",
-	    cur(cs),
-	    core_read(cs, preacc[1] + 0, CORE_NULL),
-	    core_read(cs, preacc[1] + 1, CORE_NULL),
-	    core_read(cs, preacc[1] + 2, CORE_NULL),
-	    core_read(cs, preacc[1] + 3, CORE_NULL),
-	    getname(cs, preacc[2]),
-	    cs->acc[2]
-	);
-}
-
-static void v_matchproto_(ins_exec_f)
-exec_domus_inchar(struct rc3600 *cs)
-{
-	rc3600_exec(cs);
-	trace(cs,
-	    "DOMUS CUR %-6s INCHAR Z=%04x -> 0x%02x '%s'\n",
-	    cur(cs),
-	    cs->acc[2],
-	    cs->acc[1],
-	    ascii(cs->acc[1] & 0xff)
-	);
-}
-
-static ins_exec_f *domus_exec[] = {
-	[0006004] = exec_domus_sendm,
-	[0006207] = exec_domus_inchar,
-};
-
-static unsigned ndomus_exec = sizeof(domus_exec) / sizeof(domus_exec[0]);
 
 void v_matchproto_(cli_func_f)
 cli_domus(struct cli *cli)
@@ -267,10 +302,8 @@ cli_domus(struct cli *cli)
 	AN(cs);
 	cli->ac--;
 	cli->av++;
-	for (u = 0; u < ndomus_call || u < ndomus_exec; u++) {
-		if (u < ndomus_exec && domus_exec[u] != NULL)
-			cs->ins_exec[u] = domus_exec[u];
-		else if (u < ndomus_call && domus_call[u] != NULL)
+	for (u = 0; u < ndomus_call; u++) {
+		if (domus_call[u] != NULL)
 			cs->ins_exec[u] = exec_domus;
 	}
 }
