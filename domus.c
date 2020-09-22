@@ -298,6 +298,11 @@ cli_domus(struct cli *cli)
 	unsigned u;
 
 	AN(cli);
+	if (cli->help) {
+		cli_printf(cli, "%s\n", cli->av[0]);
+		cli_printf(cli, "\t\tEnable DOMUS syscall tracing\n");
+		return;
+	}
 	cs = cli->cs;
 	AN(cs);
 	cli->ac--;

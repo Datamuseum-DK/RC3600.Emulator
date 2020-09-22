@@ -27,6 +27,45 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
+ *
+ * The extended instruction set of the RC3803/CPU720/CPU721 CPU
+ * ------------------------------------------------------------
+ *
+ * These instructions are presumably specified in
+ *
+ *     RCSL-42-I-1008 RC 3803 CPU Programmer's Reference Manual
+ *
+ * but the specification is deficient in a number of ways which
+ * make it useless for implementors and buggy for users.
+ *
+ * Getting:
+ *
+ *     RCSL-52-AA-899 TEST OF INSTRUCTION SET FOR CPU 720
+ *
+ * to pass helps, but even that very exhaustive and competent
+ * test misses some required behaviour, for instance the value
+ * returned in AC1 from the FETCH instruction.
+ *
+ * More complicted, neither the wrong documentation or the test
+ * program explain how other obscure details can possibly work
+ * in the first place which leads to undocumented AC1 call value
+ * requirement for PLINK.
+ *
+ * For that I had to consult the microcode documentation:
+ *
+ *     RCSL-44-RT-1877 CPU720 MICROPROGRAM FLOWCHARTS
+ *
+ * And should that ever fail, I could resort to the microcode
+ * prom listings in:
+ *
+ *     RCSL-44-RT-1955 CPU720 ROM LISTING
+ *
+ * and
+ *
+ *     RCSL-44-RT-2063 CPU 721 ROM Listing
+ *
+ * But I hope it never gets to that...
+ *
  */
 
 #include <string.h>
@@ -177,7 +216,7 @@ cpu_720_schel(struct rc3600 *cs)
 		return;
 	}
 	do {
-		if (core_read(cs, cs->acc[2] + 0, CORE_NULL) !=
+		if (core_read(cs, cs->acc[2], CORE_NULL) !=
 		    core_read(cs, u + 4, CORE_NULL)) {
 			cs->duration += 1700;	// XXX
 			break;
@@ -228,7 +267,7 @@ cpu_720_link(struct rc3600 *cs)
 	oldtail = core_read(cs, cs->acc[1] + 1, CORE_NULL);
 	cs->acc[0] = oldtail;		/* RCSL 52-AA-899, 017606 */
 	core_write(cs, cs->acc[1] + 1, cs->acc[2], CORE_MODIFY);
-	core_write(cs, cs->acc[2] + 0, cs->acc[1], CORE_MODIFY);
+	core_write(cs, cs->acc[2], cs->acc[1], CORE_MODIFY);
 	core_write(cs, cs->acc[2] + 1, oldtail, CORE_MODIFY);
 	core_write(cs, oldtail, cs->acc[2], CORE_MODIFY);
 	cs->duration += 7200;
@@ -291,7 +330,7 @@ cpu_720_fetch(struct rc3600 *cs)
 	q = core_read(cs, m, CORE_NULL);
 	cs->npc = core_read(cs, cs->npc + (q >> 8), CORE_NULL);
 	cs->acc[0] = q & 0xff;			/* RCSL 52-AA-899, 020342 */
-	cs->acc[1] = q >> 8;			/* By hand */
+	cs->acc[1] = q >> 8;			/* By hand, req'ed */
 	cs->duration += 6700;
 }
 
@@ -316,10 +355,13 @@ cpu_720_takea(struct rc3600 *cs)
 		q1 = core_read(cs, q1 + 017, CORE_NULL);
 		cs->acc[1] = q + q1;
 		break;
+	default:
+		assert(0 == __LINE__);
 	}
 	cs->acc[0] >>= 2;
-	cs->acc[2] = core_read(cs, 0x20, CORE_NULL); /* RCSL 52-AA-899, 020576 */
-	cs->carry = 0;				/* By hand, reduces diffs */
+	cs->acc[2] = core_read(cs, 0x20, CORE_NULL);
+				/* RCSL 52-AA-899, 020576 */
+	cs->carry = 0;		/* By hand, not req'ed, reduces diffs */
 }
 
 static void v_matchproto_(ins_exec_f)

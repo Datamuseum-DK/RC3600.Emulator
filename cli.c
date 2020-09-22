@@ -363,6 +363,7 @@ static const struct cli_cmds {
 } cli_cmds[] = {
 	{ "help",	cli_help },
 	{ "exit",	cli_exit },
+	{ "cpu",	cli_cpu },
 	{ "switches",	cli_switches },
 	{ "examine",	cli_examine },
 	{ "deposit",	cli_deposit },
@@ -373,7 +374,6 @@ static const struct cli_cmds {
 	// reset
 	// continue (differs from start how ?)
 
-	{ "cpu",	cli_cpu },
 	{ "tty",	cli_tty },
 	{ "dkp",	cli_dkp },
 	{ "rtc",	cli_rtc },
@@ -396,6 +396,7 @@ cli_help(struct cli *cli)
 {
 	const struct cli_cmds *cc;
 	char *save;
+	int bug;
 
 	if (cli->help) {
 		if (cli_alias_help(cli, "help"))
@@ -405,6 +406,7 @@ cli_help(struct cli *cli)
 		return;
 	}
 	cli->help = 1;
+	bug = cli->ac;
 	for (cc = cli_cmds; cc->cmd != NULL; cc++) {
 		if (cli->ac > 1 && strcmp(cli->av[1], cc->cmd))
 			continue;
@@ -414,8 +416,10 @@ cli_help(struct cli *cli)
 		cc->func(cli);
 		free(cli->av[0]);
 		cli->av[0] = save;
+		assert(bug == cli->ac);
+		cli_printf(cli, "\n");
 	}
-	if (cli->ac == 1 || !strcmp(cli->av[1], "elastic"))
+	if (cli->ac == 1 || (cli->ac > 1 && !strcmp(cli->av[1], "elastic")))
 		(void)cli_elastic(NULL, cli);
 }
 

@@ -335,6 +335,20 @@ cli_cpu(struct cli *cli)
 	const char *ptr;
 
 	AN(cli);
+	if (cli->help) {
+		cli_printf(cli, "%s [arguments]\n", cli->av[0]);
+		cli_printf(cli, "\tmodel\n");
+		cli_printf(cli, "\t\tSee list of CPU models\n");
+		cli_printf(cli, "\tmodel <model>\n");
+		cli_printf(cli, "\t\tSet CPU model\n");
+		cli_printf(cli, "\textmem\n");
+		cli_printf(cli, "\t\tEnable Extended (128K) memory\n");
+		cli_printf(cli, "\tident 0...4\n");
+		cli_printf(cli, "\t\tSet IDFY instruction return value\n");
+		cli_printf(cli, "\tcore <words>\n");
+		cli_printf(cli, "\t\tSet core storage size in words\n");
+		return;
+	}
 	cs = cli->cs;
 	AN(cs);
 	cli->ac--;

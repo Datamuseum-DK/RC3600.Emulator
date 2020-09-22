@@ -50,7 +50,7 @@ trace_state(struct rc3600 *cs)
 		return;
 	bprintf(buf,
 	    "I %jd %d %04x %04x %06o  %04x %04x %04x %04x %c"
-	    " s%.9f r%.6f d%.6f"
+	    //" s%.9f r%.6f d%.6f"
 	    " w%8ju %s\n",
 	    cs->ins_count,
 	    cs->inten[0],
@@ -62,9 +62,9 @@ trace_state(struct rc3600 *cs)
 	    cs->acc[2],
 	    cs->acc[3],
 	    cs->carry ? 'C' : '.',
-	    cs->sim_time * 1e-9,
-	    cs->real_time * 1e-9,
-	    (cs->sim_time - cs->real_time) * 1e-9,
+	    //cs->sim_time * 1e-9,
+	    //cs->real_time * 1e-9,
+	    //(cs->sim_time - cs->real_time) * 1e-9,
 	    cs->ins_count - cs->last_core,
 	    core_disass(cs, cs->pc)
 	);
