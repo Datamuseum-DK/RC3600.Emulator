@@ -271,7 +271,7 @@ exec_domus(struct rc3600 *cs)
 		case 's':
 			p += snprintf(p, e - p, " s  \"");
 			while (1) {
-				w = getbyte(cs, v);
+				w = getbyte(cs, v++);
 				if (!w)
 					break;
 				p = ascii(p, e, w);
