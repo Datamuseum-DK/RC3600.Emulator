@@ -272,13 +272,18 @@ cli_exit(struct cli *cli)
 		    "\t\tExit emulator with optional return code\n");
 		return;
 	}
+	printf("%jd instructions, %jd paces, %jd pace nsecs\n",
+	    cli->cs->ins_count,
+	    cli->cs->pace_n,
+	    cli->cs->pace_nsec
+	);
 	if (cli->ac == 1)
 		exit(0);
 	if (cli_n_args(cli, 1))
 		return;
 	w = to_word(cli, cli->av[1]);
 	if (cli->status)
-		return;
+		exit(-1);
 	exit(w);
 }
 

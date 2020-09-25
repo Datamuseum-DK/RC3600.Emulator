@@ -260,7 +260,7 @@ dkp_seek_thread(void *priv)
 		AZ(pthread_mutex_unlock(&dp->seek_mtx));
 
 		//printf("SEEK/RECAL BEGIN\n");
-		usleep(200);
+		// usleep(200);
 		//printf("SEEK/RECAL END\n");
 
 		AZ(pthread_mutex_lock(&dp->iop->mtx));

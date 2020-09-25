@@ -81,6 +81,8 @@ struct rc3600 {
 	struct iodev		*iodevs[64];
 	struct iodev		*nodev;
 
+	uint64_t		pace_nsec;
+	uint64_t		pace_n;
 	uint64_t		ins_count;
 	ins_exec_f		*ins_exec[1 << 16];
 

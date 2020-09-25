@@ -174,7 +174,9 @@ cpu_thread(void *priv)
 		}
 		AZ(pthread_mutex_lock(&cs->run_mtx));
 		if (TAILQ_EMPTY(&cs->irq_list) && pace > 0) {
-			zzz = pace + now();
+			cs->pace_n++;
+			cs->pace_nsec += pace;
+			zzz = pace + cs->real_time;
 			ts.tv_sec = zzz / 1000000000;
 			ts.tv_nsec = zzz % 1000000000;
 			(void)pthread_cond_timedwait(&cs->wait_cond, &cs->run_mtx, &ts);

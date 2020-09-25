@@ -52,7 +52,7 @@ dev_tti_thread(void *priv)
 
 	while (1) {
 		if (tp->ep->bits_per_sec > 0)
-			usleep(nsec_per_char(tp->ep) / 1000);
+			callout_dev_sleep(iod, nsec_per_char(tp->ep));
 		sz = elastic_get(tp->ep, buf, 1);
 		assert(sz == 1);
 		AZ(pthread_mutex_lock(&iod->mtx));

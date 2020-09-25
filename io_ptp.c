@@ -59,7 +59,7 @@ dev_ptp_thread(void *priv)
 		buf[0] = u;
 		elastic_put(tp->ep, buf, 1);
 		if (tp->ep->bits_per_sec > 0)
-			usleep(nsec_per_char(tp->ep) / 1000);
+			callout_dev_sleep(iod, nsec_per_char(tp->ep));
 		AZ(pthread_mutex_lock(&iod->mtx));
 		iod->busy = 0;
 		iod->done = 1;
