@@ -32,7 +32,6 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <stdarg.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -459,4 +458,25 @@ cli_exec(struct rc3600 *cs, const char *s)
 	cc->func(&cli);
 	VAV_Free(av);
 	return (cli.status);
+}
+
+int
+cli_from_file(struct rc3600 *cs, FILE *fi, int fatal)
+{
+	char buf[BUFSIZ];
+	char *p;
+	int rv = 0;
+
+	while (1) {
+		if (fgets(buf, sizeof buf, fi) != buf)
+			break;
+		p = strchr(buf, '\n');
+		if (p != NULL)
+			*p = '\0';
+		printf("cli <%s>\n", buf);
+		rv = cli_exec(cs, buf);
+		if (rv < 0 || (rv && fatal))
+			break;
+	}
+	return (rv);
 }

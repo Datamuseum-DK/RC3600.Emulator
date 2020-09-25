@@ -31,7 +31,6 @@
 
 #include <fcntl.h>
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
 #include "rc3600.h"
 #include "elastic.h"

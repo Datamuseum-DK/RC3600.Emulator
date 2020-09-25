@@ -30,7 +30,6 @@
  */
 
 #include <stdlib.h>
-#include <stdint.h>
 
 #include "rc3600.h"
 

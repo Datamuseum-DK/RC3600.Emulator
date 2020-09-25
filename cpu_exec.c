@@ -29,10 +29,6 @@
  *
  */
 
-
-#include <stdio.h>
-#include <assert.h>
-#include <pthread.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/endian.h>

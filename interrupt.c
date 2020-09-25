@@ -31,8 +31,6 @@
 
 #include <string.h>
 
-#include <pthread.h>
-
 #include "rc3600.h"
 
 void

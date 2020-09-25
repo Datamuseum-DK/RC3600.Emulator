@@ -31,6 +31,7 @@
 
 #include <assert.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <pthread.h>
 #include <sys/queue.h>
 #include <sys/types.h>
@@ -138,6 +139,8 @@ struct cli {
 };
 
 int cli_exec(struct rc3600 *, const char *);
+int cli_from_file(struct rc3600 *cs, FILE *fi, int fatal);
+
 
 typedef void cli_func_f(struct cli *);
 

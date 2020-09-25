@@ -32,13 +32,14 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <stdarg.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
 #include "rc3600.h"
 #include "elastic.h"
+
+int optreset;		// Some have it, some not.
 
 void
 trace_state(struct rc3600 *cs)
@@ -106,10 +107,9 @@ int
 main(int argc, char **argv)
 {
 	int ch, i;
-	char buf[BUFSIZ];
-	char *p;
 	int bare = 0;
 	struct rc3600 *cs;
+	FILE *fi;
 
 	setbuf(stdout, NULL);
 	setbuf(stderr, NULL);
@@ -117,10 +117,13 @@ main(int argc, char **argv)
 	cs = cpu_new();
 	AN(cs);
 
-	while ((ch = getopt(argc, argv, "b:htT:")) != -1) {
+	while ((ch = getopt(argc, argv, "b:f:htT:")) != -1) {
 		switch (ch) {
 		case 'b':
 			bare = 1;
+			break;
+		case 'f':
+			// handled in second pass
 			break;
 		case 't':
 			cs->do_trace++;
@@ -139,14 +142,35 @@ main(int argc, char **argv)
 			exit(0);
 		}
 	}
-	argc -= optind;
-	argv += optind;
-
 	if (!bare) {
 		AZ(cli_exec(cs, "cpu"));
 		AZ(cli_exec(cs, "tty 0"));
 		AZ(cli_exec(cs, "rtc 0"));
 	}
+
+	optind = 1;
+	optreset = 1;
+	while ((ch = getopt(argc, argv, "b:f:htT:")) != -1) {
+		switch(ch) {
+		case 'f':
+			fi = fopen(optarg, "r");
+			if (fi == NULL) {
+				fprintf(stderr, "Cannot open %s: %s\n",
+				    optarg, strerror(errno));
+				exit(2);
+			}
+			if (cli_from_file(cs, fi, 1))
+				exit(2);
+			fclose(fi);
+			break;
+		default:
+			break;
+		}
+	}
+
+	argc -= optind;
+	argv += optind;
+
 	for (i = 0; i < argc; i++) {
 		printf("CLI <%s>\n", argv[i]);
 		if (cli_exec(cs, argv[i]))
@@ -155,15 +179,6 @@ main(int argc, char **argv)
 
 	printf("CLI open\n");
 
-	while (1) {
-		if (fgets(buf, sizeof buf, stdin) != buf)
-			break;
-		p = strchr(buf, '\n');
-		if (p != NULL)
-			*p = '\0';
-		printf("cli <%s>\n", buf);
-		if (cli_exec(cs, buf) < 0)
-			break;
-	}
+	(void)cli_from_file(cs, stdin, 0);
 	return (0);
 }

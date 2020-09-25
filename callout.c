@@ -179,8 +179,6 @@ callout_dev_is_done(struct iodev *iop, nanosec when)
 
 /**********************************************************************/
 
-#include <stdio.h>
-
 nanosec
 callout_poll(struct rc3600 *cs)
 {
