@@ -203,7 +203,7 @@ elastic_tcp_active(struct elastic *ep, struct cli *cli, const char *where)
 	if (s == -1)
 		return (cli_error(cli,
 		    "Could not connect: %s\n", strerror(errno)));
-	elastic_fd_use(ep, s, -1);
+	(void)elastic_fd_start(ep, s, -1, 1);
 	return (0);
 }
 

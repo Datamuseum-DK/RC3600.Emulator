@@ -42,6 +42,8 @@
 struct elastic_fd {
 	struct elastic			*ep;
 	int				fd;
+	int				has_thread;
+	int				selfdestruct;
 	pthread_t			rxt;
 	struct elastic_subscriber	*ws;
 };
@@ -59,10 +61,12 @@ elastic_fd_rxthread(void *priv)
 			break;
 		elastic_inject(efp->ep, buf, 1);
 	}
-	if (efp->ws != NULL)
-		elastic_unsubscribe(efp->ep, efp->ws);
-	AZ(close(efp->fd));
-	free(efp);
+	if (efp->selfdestruct) {
+		if (efp->ws != NULL)
+			elastic_unsubscribe(efp->ep, efp->ws);
+		AZ(close(efp->fd));
+		free(efp);
+	}
 	return (NULL);
 }
 
@@ -85,14 +89,14 @@ elastic_fd_txfunc(void *priv, const void *src, size_t len)
 		case 0x13:
 			break;
 		default:
-			write(efp->fd, buf, 1);
+			(void)write(efp->fd, buf, 1);
 			break;
 		}
 	}
 }
 
-void
-elastic_fd_use(struct elastic *ep, int fd, int mode)
+struct elastic_fd *
+elastic_fd_start(struct elastic *ep, int fd, int mode, int selfdestruct)
 {
 	struct elastic_fd *efp;
 
@@ -108,10 +112,34 @@ elastic_fd_use(struct elastic *ep, int fd, int mode)
 	AN(efp);
 	efp->fd = fd;
 	efp->ep = ep;
+	efp->selfdestruct = selfdestruct;
 	if (mode != O_RDONLY)
 		efp->ws = elastic_subscribe(ep, elastic_fd_txfunc, efp);
-	if (mode != O_WRONLY)
+	if (mode != O_WRONLY) {
+		efp->has_thread = 1;
 		AZ(pthread_create(&efp->rxt, NULL, elastic_fd_rxthread, efp));
+		if (selfdestruct)
+			AZ(pthread_detach(efp->rxt));
+	}
+	return(efp);
+}
+
+void
+elastic_fd_stop(struct elastic_fd **efpp)
+{
+	struct elastic_fd *efp;
+	void *p;
+
+	AN(efpp);
+	efp = *efpp;
+	*efpp = NULL;
+	AZ(efp->selfdestruct);
+	AZ(close(efp->fd));
+	if (efp->ws != NULL)
+		elastic_unsubscribe(efp->ep, efp->ws);
+	if (efp->has_thread)
+		AZ(pthread_join(efp->rxt, &p));
+	free(efp);
 }
 
 static void
@@ -147,7 +175,7 @@ elastic_serial(struct elastic *ep, struct cli *cli)
 		cli_unknown(cli);
 	}
 	assert(tcsetattr(fd, TCSAFLUSH, &tt) == 0);
-	elastic_fd_use(ep, fd, -1);
+	(void)elastic_fd_start(ep, fd, -1, 1);
 }
 
 int v_matchproto_(cli_elastic_f)
@@ -186,7 +214,9 @@ cli_elastic_fd(struct elastic *ep, struct cli *cli)
 			return (cli_error(cli, "Cannot open %s: %s\n",
 			    cli->av[1], strerror(errno)));
 
-		elastic_fd_use(ep, fd, O_WRONLY);
+		if (ep->out != NULL)
+			elastic_fd_stop(&ep->out);
+		ep->out = elastic_fd_start(ep, fd, O_WRONLY, 0);
 		cli->av += 2;
 		cli->ac -= 2;
 		return (1);
@@ -203,7 +233,7 @@ cli_elastic_fd(struct elastic *ep, struct cli *cli)
 			return (cli_error(cli, "Cannot open %s: %s\n",
 			    cli->av[1], strerror(errno)));
 
-		elastic_fd_use(ep, fd, O_RDONLY);
+		(void)elastic_fd_start(ep, fd, O_RDONLY, 1);
 		cli->av += 2;
 		cli->ac -= 2;
 		return (1);

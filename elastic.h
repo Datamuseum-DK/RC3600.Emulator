@@ -65,6 +65,7 @@ struct elastic {
 	pthread_cond_t			cond_out;
 
 	struct elastic_match		*em;
+	struct elastic_fd		*out;
 };
 
 struct elastic *elastic_new(struct rc3600 *, int mode);
@@ -86,4 +87,7 @@ cli_elastic_f cli_elastic_tcp;
 cli_elastic_f cli_elastic_fd;
 cli_elastic_f cli_elastic_match;
 
-void elastic_fd_use(struct elastic *ep, int fd, int mode);
+struct elastic_fd *elastic_fd_start(
+    struct elastic *ep, int fd, int mode, int selfdestruct);
+void elastic_fd_stop(struct elastic_fd **efpp);
+
