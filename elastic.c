@@ -50,6 +50,7 @@ elastic_new(struct rc3600 *cs, int mode)
 	AZ(pthread_cond_init(&ep->cond_in, NULL));
 	AZ(pthread_cond_init(&ep->cond_out, NULL));
 	assert(mode == O_RDONLY || mode == O_RDWR || mode == O_WRONLY);
+	ep->text = 1;
 	ep->mode = mode;
 	ep->cs = cs;
 	ep->bits_per_char = 8;
@@ -235,6 +236,10 @@ cli_elastic(struct elastic *ep, struct cli *cli)
 	AN(cli);
 	if (cli->help) {
 		cli_printf(cli, "<elastic> [arguments]\n");
+		cli_printf(cli, "\ttext\n");
+		cli_printf(cli, "\t\tSet text mode\n");
+		cli_printf(cli, "\tbinary\n");
+		cli_printf(cli, "\t\tSet binary mode\n");
 		cli_printf(cli, "\t\tElastic buffer arguments\n");
 		cli_printf(cli, "\tcps <characters_per_second>\n");
 		cli_printf(cli, "\t\tOutput bandwidth\n");
@@ -277,6 +282,23 @@ cli_elastic(struct elastic *ep, struct cli *cli)
 		cli->ac--;
 		cli->av++;
 		return(1);
+	}
+	if (!strcmp(*cli->av, "text")) {
+		if (cli_n_args(cli, 0))
+			return (1);
+		ep->text = 1;
+		cli->ac--;
+		cli->av++;
+		return (1);
+	}
+
+	if (!strcmp(*cli->av, "binary")) {
+		if (cli_n_args(cli, 0))
+			return (1);
+		ep->text = 0;
+		cli->ac--;
+		cli->av++;
+		return (1);
 	}
 
 	if (!strcmp(*cli->av, "<<")) {

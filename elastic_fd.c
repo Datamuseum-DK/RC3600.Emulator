@@ -70,8 +70,25 @@ static void
 elastic_fd_txfunc(void *priv, const void *src, size_t len)
 {
 	struct elastic_fd *efp = priv;
+	const char *p = src;
+	char buf[1];
 
-	(void)write(efp->fd, src, len);
+	if (!efp->ep->text) {
+		(void)write(efp->fd, src, len);
+		return;
+	}
+	while (len--) {
+		buf[0] = *p++ & 0x7f;
+		switch (buf[0]) {
+		case 0x00:
+		case 0x11:
+		case 0x13:
+			break;
+		default:
+			write(efp->fd, buf, 1);
+			break;
+		}
+	}
 }
 
 void
@@ -87,13 +104,6 @@ elastic_fd_use(struct elastic *ep, int fd, int mode)
 	else
 		assert(ep->mode == O_RDWR || ep->mode == mode);
 
-	if (mode != O_WRONLY) {
-		elastic_inject(ep, "", 1);
-		elastic_inject(ep, "", 1);
-		elastic_inject(ep, "", 1);
-		elastic_inject(ep, "", 1);
-		elastic_inject(ep, "", 1);
-	}
 	efp = calloc(1, sizeof *efp);
 	AN(efp);
 	efp->fd = fd;

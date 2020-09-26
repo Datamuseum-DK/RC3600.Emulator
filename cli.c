@@ -143,6 +143,35 @@ cli_autoload(struct cli *cli)
 /**********************************************************************/
 
 static void v_matchproto_(cli_func_t)
+cli_trace(struct cli *cli)
+{
+	int i;
+
+	if (cli->help) {
+		cli_printf(cli, "%s [<word>]\n", cli->av[0]);
+		cli_printf(cli, "\t\tSet or read trace flag\n");
+		return;
+	}
+
+	if (cli->ac > 2) {
+		cli_printf(cli,
+		    "Expected only optional <word> argument after %s\n",
+		    cli->av[0]);
+		return;
+	}
+	if (cli->ac == 2) {
+		i = to_word(cli, cli->av[1]);
+		if (cli->status)
+			return;
+		cli->cs->do_trace = i;
+	}
+	show_word("TRACE", cli->cs->do_trace);
+}
+
+
+/**********************************************************************/
+
+static void v_matchproto_(cli_func_t)
 cli_switches(struct cli *cli)
 {
 	int i;
@@ -272,7 +301,7 @@ cli_exit(struct cli *cli)
 		    "\t\tExit emulator with optional return code\n");
 		return;
 	}
-	printf("%jd instructions, %jd paces, %jd pace nsecs\n",
+	printf("%ju instructions, %ju paces, %ju pace nsecs\n",
 	    cli->cs->ins_count,
 	    cli->cs->pace_n,
 	    cli->cs->pace_nsec
@@ -375,6 +404,7 @@ static const struct cli_cmds {
 	{ "start",	cli_start },
 	{ "step",	cli_step },
 	{ "autoload",	cli_autoload },
+	{ "trace",	cli_trace },
 	// reset
 	// continue (differs from start how ?)
 

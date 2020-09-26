@@ -56,6 +56,7 @@ struct elastic {
 	TAILQ_HEAD(,elastic_subscriber)	subscribers;
 	TAILQ_HEAD(,chunk)		chunks_out;
 	TAILQ_HEAD(,chunk)		chunks_in;
+	int				text;
 	int				mode;
 	nanosec				bits_per_char;
 	nanosec				bits_per_sec;

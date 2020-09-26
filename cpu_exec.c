@@ -211,7 +211,7 @@ EA(struct rc3600 *cs)
 	i = cs->ins & 0x400;
 	while (i) {
 		cs->duration += cs->timing->time_indir_adr;
-		if (cs->do_trace > 1)
+		if (cs->do_trace & 2)
 			trace(cs, "EA 0x%04x = 0x%04x\n", t, core_read(cs, t, CORE_NULL));
 		u = core_read(cs, t, CORE_READ | CORE_INDIR);
 		if (!cs->ext_core)

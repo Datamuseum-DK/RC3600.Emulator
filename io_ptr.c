@@ -55,7 +55,7 @@ dev_ptr_thread(void *priv)
 
 		sz = elastic_get(tp->ep, buf, 1);
 		assert(sz == 1);
-		trace(iod->cs, "PTR 0x%02x\n", buf[0]);
+		dev_trace(iod, "PTR 0x%02x\n", buf[0]);
 
 		AZ(pthread_mutex_lock(&iod->mtx));
 		while (!iod->busy)

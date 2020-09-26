@@ -103,7 +103,6 @@ struct rc3600 {
 	nanosec			sim_time;
 
 	int			do_trace;
-	int			core_trace;
 	int			fd_trace;
 
 	pthread_mutex_t		callout_mtx;

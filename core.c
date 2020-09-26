@@ -101,7 +101,7 @@ core_read(struct rc3600 *cs, uint16_t addr, int how)
 	if (!(how & (CORE_NULL | CORE_INS)))
 		cs->last_core = cs->ins_count;
 	AZ(pthread_mutex_unlock(&cs->core->mtx));
-	if (cs->core_trace)
+	if (cs->do_trace & 8)
 		trace(cs, "R %04x %04x\n", addr, rv);
 	return (rv);
 }
@@ -114,7 +114,7 @@ core_write(struct rc3600 *cs, uint16_t addr, uint16_t val, int how)
 
 	AN(cs);
 	AN(how);
-	if (cs->core_trace)
+	if (cs->do_trace & 8)
 		trace(cs, "W %04x %04x\n", addr, val);
 	AZ(pthread_mutex_lock(&cs->core->mtx));
 	TAILQ_FOREACH(ch, &cs->core->handlers, next) {

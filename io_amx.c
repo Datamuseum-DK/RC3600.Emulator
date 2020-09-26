@@ -111,7 +111,7 @@ dev_amx_insfunc(struct iodev *iop, uint16_t ioi, uint16_t *reg)
 		break;
 	case IO_DOB:
 		ap->chan = (*reg >> 8) & 7;
-		buf[0] = *reg & 0x7f;
+		buf[0] = *reg & 0xff;
 		elastic_put(ap->ep[ap->chan], buf, 1);
 		break;
 	case IO_DOC:
