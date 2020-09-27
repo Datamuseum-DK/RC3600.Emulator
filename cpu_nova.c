@@ -84,6 +84,7 @@ static void v_matchproto_(ins_exec_f)
 cpu_nova_halt(struct rc3600 *cs)
 {
 	cs->running = 0;
+	printf("HALT'ed\n");
 	cpu_update_intr_flag(cs);
 }
 
