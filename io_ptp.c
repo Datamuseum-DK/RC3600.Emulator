@@ -55,7 +55,7 @@ dev_ptp_thread(void *priv)
 			AZ(pthread_cond_wait(&iod->cond, &iod->mtx));
 		u = iod->oreg_a;
 		AZ(pthread_mutex_unlock(&iod->mtx));
-		trace(iod->cs, "PTP 0x%02x\n", u);
+		dev_trace(iod, "PTP 0x%02x\n", u);
 		buf[0] = u;
 		elastic_put(tp->ep, buf, 1);
 		if (tp->ep->bits_per_sec > 0)
