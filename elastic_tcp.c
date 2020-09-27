@@ -98,7 +98,7 @@ elastic_telnet_acceptor(void *priv)
 				elastic_unsubscribe(aa.ep, aa.ws);
 				(void)(close(fd));
 				break;
-			} else if (sz == 1) {
+			} else if (sz == 1 && buf[0]) {
 				if (skip) {
 					skip--;
 				} else if (buf[0] == 0xff) {
