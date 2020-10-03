@@ -108,6 +108,20 @@ cli_start(struct cli *cli)
 }
 
 static void v_matchproto_(cli_func_t)
+cli_wait_halt(struct cli *cli)
+{
+	if (cli->help) {
+		cli_printf(cli,
+		    "%s\n\t\tWait for CPU to HALT\n",
+		    cli->av[0]);
+		return;
+	}
+	while (cli->cs->running)
+		usleep(250000);
+}
+
+
+static void v_matchproto_(cli_func_t)
 cli_step(struct cli *cli)
 {
 
@@ -221,7 +235,7 @@ exam_deposit_what(struct cli *cli,
 		*dst = &cli->cs->acc[0];
 	} else if (!strcasecmp(what, "pc")) {
 		*fld = "PC";
-		*dst = &cli->cs->ins;
+		*dst = &cli->cs->pc;
 	} else if (!strcasecmp(what, "carry")) {
 		*fld = "CARRY";
 		*dst = &cli->cs->carry;
@@ -405,6 +419,7 @@ static const struct cli_cmds {
 	{ "step",	cli_step },
 	{ "autoload",	cli_autoload },
 	{ "trace",	cli_trace },
+	{ "wait_halt",	cli_wait_halt },
 	// reset
 	// continue (differs from start how ?)
 
