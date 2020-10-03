@@ -95,6 +95,7 @@ cpu_nova_iorst(struct rc3600 *cs)
 
 	cs->ext_core = 0;
 	AZ(pthread_mutex_lock(&cs->run_mtx));
+	cs->imask = 0;
 	TAILQ_INIT(&cs->irq_list);
 	TAILQ_INIT(&cs->masked_irq_list);
 	for (u = 0; u < IO_MAXDEV; u++)

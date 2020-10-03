@@ -80,6 +80,9 @@ dev_rtc_iofunc(struct iodev *iop, uint16_t ioi, uint16_t *reg)
 
 	std_io_ins(iop, ioi, reg);
 
+	if (ioi == 0) {
+		iop->oreg_a = 0;
+	}
 	if (IO_ACTION(ioi) == IO_START) {
 		AN(iop->busy);
 		AZ(iop->done);

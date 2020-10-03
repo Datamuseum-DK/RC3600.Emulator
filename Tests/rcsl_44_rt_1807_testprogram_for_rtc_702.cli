@@ -1,0 +1,17 @@
+cpu model rc3803
+cpu model
+cpu core 128
+cpu ident 2
+ptr
+rtc 
+tty telnet :2100
+tty baud 9600
+switch 0000012
+ptr 0 < PTR/RCSL_44_RT_1807_TESTPROGRAM_FOR_RTC_702.bin
+autoload
+wait_halt
+switch 2
+d pc 2
+start
+tty match expect "PASS    1"
+exit 0
