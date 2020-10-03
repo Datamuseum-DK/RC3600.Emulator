@@ -1,0 +1,21 @@
+cpu model rc3803
+cpu model
+ptr
+rtc
+tty telnet :2100
+tty baud 9600
+switch 0000012
+ptr 0 < PTR/RCSL_44_RT_1558_RC3600_INSTRUCTION_TIMER_TEST.bin
+tty match arm "STARTADDR   400 ?  "
+autoload
+tty match wait
+tty << "400"
+tty match expect "TTY SPEED  1200 ?  "
+tty << "9600"
+tty match expect "INITIALIZED TO    11    ?  "
+tty << "11"
+tty match expect "INITIALIZED TO    16    ?  "
+tty << "22"
+tty match expect "1. PASS OF 10 RUNS"
+exit 0
+

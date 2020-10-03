@@ -255,6 +255,7 @@ cpu721: rc3600
 		< cpu720_ext_text.cli
 
 regression:	rc3600
+	./rc3600 -f Tests/rcsl_44_rt_1558_rc3600_instruction_timer_test.cli
 	./rc3600 -f Tests/rcsl_52_aa_900_rc3600_cpu_720_ext_test.cli
 
 expect:	rc3600
