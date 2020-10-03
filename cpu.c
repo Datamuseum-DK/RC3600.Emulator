@@ -136,6 +136,13 @@ cpu_thread(void *priv)
 			    iop->name, iop->devno);
 			core_write(cs, 0, cs->pc, CORE_WRITE);
 			cs->pc = core_read(cs, 1, CORE_READ | CORE_INDIR);
+			while (!cs->ext_core && cs->pc & 0x8000) {
+				cs->pc = core_read(
+				    cs,
+				    cs->pc & 0x7fff,
+				    CORE_READ | CORE_INDIR
+				);
+			}
 		}
 		if (cs->do_trace)
 			trace_state(cs);

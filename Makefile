@@ -192,6 +192,7 @@ test2:	rc3600
 		2>&1 | tee /critter/_3
 
 regression:	rc3600
+	./rc3600 -f Tests/rcsl_44_rt_1715_rc3600_cpu_logic_text.cli
 	./rc3600 -f Tests/rcsl_44_rt_1648_rc3600_extended_memory_test.cli
 	./rc3600 -f Tests/rcsl_44_rt_1595_rc3600_extended_memory_test.cli
 	./rc3600 -f Tests/rcsl_44_rt_1558_rc3600_instruction_timer_test.cli

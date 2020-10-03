@@ -1,0 +1,19 @@
+cpu model rc3803
+cpu model
+cpu ident 1
+ptr
+rtc
+tty telnet :2100
+tty baud 9600
+switch 0000012
+ptr 0 < PTR/RCSL_44_RT_1715_RC3600_CPU_LOGIC_TEST.bin
+tty match arm "AUTOLOAD"
+autoload
+tty match wait
+stop
+autoload
+wait_halt
+d pc 0500
+start
+tty match expect PASS
+exit 0

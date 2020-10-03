@@ -110,7 +110,7 @@ static void v_matchproto_(ins_exec_f)
 cpu_nova_skpbn(struct rc3600 *cs)
 {
 	cs->duration += cs->timing->time_io_skp;
-	if (cs->inten[0]) {
+	if (cs->inten[0] || cs->inten[1] ) {
 		cs->duration += cs->timing->time_io_skp_skip;
 		cs->npc++;
 	}
