@@ -1,0 +1,16 @@
+cpu model rc3803
+cpu model
+cpu extmem
+cpu core 128
+ptr < PTR/RCSL_52_AA_900_RC3600_CPU_720_EXT_TEST.bin
+rtc
+tty telnet :2100
+tty baud 9600
+switch 0000012
+autoload
+tty match byte 0x1f
+switch 0000000
+
+tty match expect "1. PASS OF 10 RUNS"
+tty match byte 7
+exit 0

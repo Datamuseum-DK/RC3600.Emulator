@@ -30,6 +30,22 @@ help:	rc3600
 	./rc3600 \
 		"help" "exit"
 
+dkp:	rc3600
+	./rc3600 \
+		-T /critter/_36 \
+		-t \
+		'cpu model rc3803' \
+		'cpu core 128' \
+		'cpu ident 2' \
+		rtc \
+		ptr \
+		ptp \
+		'tty > _tty' \
+		'ptr < /tmp/RCSL44RT1662.bin' \
+		'dkp' \
+		'switch 10' \
+		'autoload'
+
 test:	rc3600
 	./rc3600 \
 		-T /critter/_36 \
@@ -41,10 +57,12 @@ test:	rc3600
 		'rtc 0' \
 		'rtc trace 1' \
 		'tty telnet :2100' \
+		'tty serial /dev/nmdm3A' \
 		'tty trace 1' \
 		'ptp > _ptp' \
 		'ptr 0' \
-		'dkp 0 load 0 /home/phk/DDHF/DDHF/Rc3600/DKP/011/__' \
+		'dkp 0 load 0 /home/phk/DDHF/DDHF/Rc3600/DKP/004/__' \
+		'dkp 0 load 1 T/DKP027/_out' \
 		'switch 0000073' \
 		'tty baud 9600' \
 		'tty match arm "SYSTEM:"' \
@@ -52,13 +70,13 @@ test:	rc3600
 		'tty match wait' \
 		'tty << ""' \
 		'tty match xon' \
-		'tty << "LIST/CORE"' \
-		'tty match xon' \
-		'tty << "CAP8"' \
-		'tty match xon' \
-		'tty << "CATLI MU$$$$$$"' \
-		'tty match expect "FINIS CATLI"' \
-		'exit' \
+		#'tty << "LIST/CORE"' \
+		#'tty match xon' \
+		#'tty << "CAP8"' \
+		#'tty match xon' \
+		#'tty << "CATLI MU$$$$$$"' \
+		#'tty match expect "FINIS CATLI"' \
+		#'exit' \
 		2>&1 | tee /critter/_3
 
 nakskov: rc3600
@@ -236,140 +254,8 @@ cpu721: rc3600
 		-T /critter/_36 \
 		< cpu720_ext_text.cli
 
-cpu720:	rc3600
-	python3 ./ptr2tti1.py \
-		${PTRDIR}/RCSL_52_AA_900_RC3600_CPU_720_EXT_TEST.bin \
-		_tti1
-	./rc3600 \
-		-T /critter/_36 \
-		'cpu model rc3803' \
-		'cpu model' \
-		'cpu extmem' \
-		'cpu core 128' \
-		'tty 1 trace 1' \
-		'tty 1 cps 10000' \
-		'tty 1 < _tti1' \
-		'rtc trace 1' \
-		'tty telnet :2100' \
-		'tty baud 9600' \
-		'switch 0000050' \
-		'autoload' \
-		'tty match byte 0x1f' \
-		'switch 0000000' \
-		\
-		'tty match expect "PC 016443"' \
-		'tty match byte 0x07' \
-		'tty match expect "SWITCH 12 CONTINUE (Y/N): Y ?"' \
-		'tty match byte 0x07' \
-		'tty << "Y"' \
-		\
-		'tty match expect "PC 016443"' \
-		'tty match byte 0x07' \
-		'tty match expect "SWITCH 12 CONTINUE (Y/N): Y ?"' \
-		'tty match byte 0x07' \
-		'tty << "Y"' \
-		\
-		'tty match expect "PC 016443"' \
-		'tty match byte 0x07' \
-		'tty match expect "SWITCH 12 CONTINUE (Y/N): Y ?"' \
-		'tty match byte 0x07' \
-		'tty << "Y"' \
-		\
-		'tty match expect "PC 016443"' \
-		'tty match byte 0x07' \
-		'tty match expect "SWITCH 12 CONTINUE (Y/N): Y ?"' \
-		'tty match byte 0x07' \
-		'tty << "Y"' \
-		\
-		'tty match expect "PC 016443"' \
-		'tty match byte 0x07' \
-		'tty match expect "SWITCH 12 CONTINUE (Y/N): Y ?"' \
-		'tty match byte 0x07' \
-		'tty << "Y"' \
-		\
-		'tty match expect "PC 016630"' \
-		'tty match byte 0x07' \
-		'tty match expect "SWITCH 12 CONTINUE (Y/N): Y ?"' \
-		'tty match byte 0x07' \
-		'tty << "Y"' \
-		\
-		'tty match expect "PC 016630"' \
-		'tty match byte 0x07' \
-		'tty match expect "SWITCH 12 CONTINUE (Y/N): Y ?"' \
-		'tty match byte 0x07' \
-		'tty << "Y"' \
-		\
-		'tty match expect "PC 016630"' \
-		'tty match byte 0x07' \
-		'tty match expect "SWITCH 12 CONTINUE (Y/N): Y ?"' \
-		'tty match byte 0x07' \
-		'tty << "Y"' \
-		\
-		'tty match expect "PC 016630"' \
-		'tty match byte 0x07' \
-		'tty match expect "SWITCH 12 CONTINUE (Y/N): Y ?"' \
-		'tty match byte 0x07' \
-		'tty << "Y"' \
-		\
-		'tty match expect "PC 016630"' \
-		'tty match byte 0x07' \
-		'tty match expect "SWITCH 12 CONTINUE (Y/N): Y ?"' \
-		'tty match byte 0x07' \
-		'tty << "Y"' \
-		\
-		'tty match expect "PC 016630"' \
-		'tty match byte 0x07' \
-		'tty match expect "SWITCH 12 CONTINUE (Y/N): Y ?"' \
-		'tty match byte 0x07' \
-		'tty << "Y"' \
-		\
-		'tty match expect "PC 016630"' \
-		'tty match byte 0x07' \
-		'tty match expect "SWITCH 12 CONTINUE (Y/N): Y ?"' \
-		'tty match byte 0x07' \
-		'tty << "Y"' \
-		\
-		'tty match expect "PC 017062"' \
-		'tty match byte 0x07' \
-		'tty match expect "SWITCH 12 CONTINUE (Y/N): Y ?"' \
-		'tty match byte 0x07' \
-		'tty << "Y"' \
-		\
-		'tty match expect "PC 017062"' \
-		'tty match byte 0x07' \
-		'tty match expect "SWITCH 12 CONTINUE (Y/N): Y ?"' \
-		'tty match byte 0x07' \
-		'tty << "Y"' \
-		\
-		'tty match expect "PC 017062"' \
-		'tty match byte 0x07' \
-		'tty match expect "SWITCH 12 CONTINUE (Y/N): Y ?"' \
-		'tty match byte 0x07' \
-		'tty << "Y"' \
-		\
-		'tty match expect "PC 017062"' \
-		'tty match byte 0x07' \
-		'tty match expect "SWITCH 12 CONTINUE (Y/N): Y ?"' \
-		'tty match byte 0x07' \
-		'tty << "Y"' \
-		\
-		'tty match expect "PC 017062"' \
-		'tty match byte 0x07' \
-		'tty match expect "SWITCH 12 CONTINUE (Y/N): Y ?"' \
-		'tty match byte 0x07' \
-		'tty << "Y"' \
-		\
-		'tty match expect "PC 017062"' \
-		'tty match byte 0x07' \
-		'tty match expect "SWITCH 12 CONTINUE (Y/N): Y ?"' \
-		'tty match byte 0x07' \
-		'tty << "Y"' \
-		\
-		'tty match expect "SWITCH 12 CONTINUE (Y/N): Y ?"' \
-		'tty match byte 0x07' \
-		'stop' \
-		2>&1 | tee /critter/_3
-
+regression:	rc3600
+	./rc3600 -f Tests/rcsl_52_aa_900_rc3600_cpu_720_ext_test.cli
 
 expect:	rc3600
 	./rc3600 \
