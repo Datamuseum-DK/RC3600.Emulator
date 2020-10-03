@@ -1,0 +1,23 @@
+cpu model rc3803
+cpu model
+cpu core 128
+cpu ident 2
+ptr
+rtc
+tty telnet :2100
+tty baud 9600
+switch 0000012
+ptr 0 < PTR/RCSL_44_RT_1648_RC3600_EXTENDED_MEMORY_TEST.bin
+tty match arm "STARTADDR   400 ?"
+autoload
+tty match wait
+switch 0
+tty << ""
+tty match expect "FIRST MEMORY LOC 11614  ?"
+tty << ""
+tty match expect "LAST MEMORY LOC 77577   ?"
+tty << ""
+tty match expect "MEMORY TYPE:     1      ?"
+tty << ""
+tty match expect "1. PASS OF 5 RUNS"
+exit 0

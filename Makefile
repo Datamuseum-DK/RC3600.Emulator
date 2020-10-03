@@ -128,7 +128,7 @@ nakskov: rc3600
 
 co040:	rc3600
 	./rc3600 \
-		-T /critter/_36 \
+		- /critter/_36 \
 		'ptr 0' \
 		'ptp 0' \
 		'tty telnet :2000' \
@@ -191,70 +191,9 @@ test2:	rc3600
 		'tty match expect "FINIS CATLI"' \
 		2>&1 | tee /critter/_3
 
-timer:	rc3600
-	./rc3600 \
-		-T /critter/_36 \
-		'cpu model rc3803' \
-		'cpu model' \
-		'ptr trace 1' \
-		'rtc trace 2' \
-		'tty telnet :2100' \
-		'tty baud 9600' \
-		'switch 0000012' \
-		'ptr 0 < ${PTRDIR}/RCSL_44_RT_1558_RC3600_INSTRUCTION_TIMER_TEST.bin' \
-		'tty match arm "STARTADDR   400 ?  "' \
-		'autoload' \
-		'tty match wait' \
-		'tty << "401"' \
-		'tty match expect "TTY SPEED  1200 ?  "' \
-		'tty << "9600"' \
-		'tty match expect "INITIALIZED TO    11    ?  "' \
-		'tty << ""' \
-		'tty match expect "INITIALIZED TO    16    ?  "' \
-		'tty << "22"' \
-		'tty match expect "STARTADDR   400 ?  "' \
-		'stop' \
-		2>&1 | tee /critter/_3
-
-timer2:	rc3600
-	python3 ./ptr2tti1.py \
-		${PTRDIR}/RCSL_44_RT_1558_RC3600_INSTRUCTION_TIMER_TEST.bin \
-		_tti1
-	./rc3600 \
-		-T /critter/_36 \
-		'cpu model rc3803' \
-		'cpu model' \
-		'tty 1 trace 1' \
-		'tty 1 cps 10000' \
-		'tty 1 < _tti1' \
-		'ptr trace 1' \
-		'rtc trace 1' \
-		'tty telnet :2100' \
-		'tty baud 9600' \
-		'switch 0000050' \
-		'tty match arm "STARTADDR   400 ?  "' \
-		'autoload' \
-		'tty match wait' \
-		'tty << "401"' \
-		'tty match expect "TTY SPEED  1200 ?  "' \
-		'tty << "9600"' \
-		'tty match expect "INITIALIZED TO    11    ?  "' \
-		'tty << ""' \
-		'tty match expect "INITIALIZED TO    16    ?  "' \
-		'tty << "22"' \
-		'tty match expect "STARTADDR   400 ?  "' \
-		'stop' \
-		2>&1 | tee /critter/_3
-
-cpu721: rc3600
-	python3 ./ptr2tti1.py \
-		${PTRDIR}/RCSL_52_AA_900_RC3600_CPU_720_EXT_TEST.bin \
-		_tti1
-	./rc3600 \
-		-T /critter/_36 \
-		< cpu720_ext_text.cli
-
 regression:	rc3600
+	./rc3600 -f Tests/rcsl_44_rt_1648_rc3600_extended_memory_test.cli
+	./rc3600 -f Tests/rcsl_44_rt_1595_rc3600_extended_memory_test.cli
 	./rc3600 -f Tests/rcsl_44_rt_1558_rc3600_instruction_timer_test.cli
 	./rc3600 -f Tests/rcsl_52_aa_900_rc3600_cpu_720_ext_test.cli
 
