@@ -148,6 +148,10 @@ cpu_thread(void *priv)
 			trace_state(cs);
 		cs->duration = 0;
 		cs->ins_count++;
+		if (cs->pc == cs->breakpoint) {
+			printf("BREAKPOINT 0x%04x\n", cs->pc);
+			cs->running = 0;
+		}
 		cs->ins = core_read(cs, cs->pc, CORE_READ | CORE_INS);
 		cs->npc = cs->pc + 1;
 		cs->ins_exec[cs->ins](cs);
@@ -320,6 +324,7 @@ cpu_new(void)
 
 	cs->core_size = 0x8000;
 	cs->core = core_new();
+	cs->breakpoint = -1;
 
 	iodev_init(cs);
 

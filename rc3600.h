@@ -91,6 +91,7 @@ struct rc3600 {
 	struct core		*core;
 	unsigned		core_size;
 	uint64_t		last_core;
+	int			breakpoint;
 
 	uint16_t		switches;
 

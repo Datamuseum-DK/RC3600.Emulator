@@ -186,6 +186,35 @@ cli_trace(struct cli *cli)
 /**********************************************************************/
 
 static void v_matchproto_(cli_func_t)
+cli_break(struct cli *cli)
+{
+	int i;
+
+	if (cli->help) {
+		if (cli_alias_help(cli, "break"))
+			return;
+		cli_printf(cli, "%s [<word>]\n", cli->av[0]);
+		cli_printf(cli, "\t\tSet breakpoint\n");
+		return;
+	}
+
+	if (cli->ac > 2) {
+		cli_printf(cli,
+		    "Expected only optional <word> argument after %s\n",
+		    cli->av[0]);
+		return;
+	}
+	if (cli->ac == 2) {
+		i = to_word(cli, cli->av[1]);
+		if (cli->status)
+			return;
+		cli->cs->breakpoint = i;
+	}
+}
+
+/**********************************************************************/
+
+static void v_matchproto_(cli_func_t)
 cli_switches(struct cli *cli)
 {
 	int i;
@@ -420,6 +449,7 @@ static const struct cli_cmds {
 	{ "autoload",	cli_autoload },
 	{ "trace",	cli_trace },
 	{ "wait_halt",	cli_wait_halt },
+	{ "break",	cli_break },
 	// reset
 	// continue (differs from start how ?)
 
@@ -436,6 +466,7 @@ static const struct cli_cmds {
 	{ "switch",	cli_switches },
 	{ "x",		cli_examine },
 	{ "d",		cli_deposit },
+	{ "b",		cli_break },
 	{ "?",		cli_help },
 	{ NULL,		NULL },
 };
