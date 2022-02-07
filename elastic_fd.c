@@ -192,7 +192,19 @@ elastic_serial(struct elastic *ep, struct cli *cli)
 	cli->ac -= 2;
 	cli->av += 2;
 	while (cli->ac > 0) {
+		if (!strcmp(*cli->av, "110")) {
+			cli->ac --;
+			cli->av ++;
+			tt.c_cflag &= ~CSIZE;
+			tt.c_cflag |= CS7;
+			tt.c_cflag |= CSTOPB;
+			tt.c_cflag |= PARENB;
+			tt.c_cflag &= ~PARODD;
+			cfsetspeed(&tt, B110);
+			continue;
+		}
 		cli_unknown(cli);
+		break;
 	}
 	assert(tcsetattr(fd, TCSAFLUSH, &tt) == 0);
 	(void)elastic_fd_start(ep, fd, -1, 1);
