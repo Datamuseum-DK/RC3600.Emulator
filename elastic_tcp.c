@@ -145,6 +145,7 @@ elastic_telnet_passive(struct elastic *ep, struct cli *cli, const char *where)
 			continue;
 		val = 1;
 		AZ(setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &val, sizeof val));
+		AZ(setsockopt(s, SOL_SOCKET, SO_REUSEPORT, &val, sizeof val));
 		if (bind(s, res->ai_addr, res->ai_addrlen) < 0) {
 			AZ(close(s));
 			s = -1;
