@@ -419,6 +419,17 @@ cli_unknown(struct cli *cli)
 	cli->status = 1;
 }
 
+void
+cli_background(struct cli *cli)
+{
+
+	cli_printf(cli, "CLI processing stops\n.");
+	while (1) {
+		sleep(120);
+	}
+	cli->status = 1;
+}
+
 int
 cli_n_args(struct cli *cli, int n)
 {
@@ -464,6 +475,7 @@ static const struct cli_cmds {
 	{ "domus",	cli_domus },
 
 	{ "switch",	cli_switches },
+	{ "background",	cli_background },
 	{ "x",		cli_examine },
 	{ "d",		cli_deposit },
 	{ "b",		cli_break },
