@@ -38,24 +38,64 @@
 
 #define NCHAN 8
 
-#define CMD_RECEIVE		0
-#define CMD_STOP_RECEIVE	1
-#define CMD_TRANSMIT		2
-#define CMD_STOP_TRANSMIT	3
-#define CMD_SEL_INPUT_BUF	4
-#define CMD_SEL_MODEM_STATUS	5
-#define CMD_SEL_IN_BUF_STATUS	6
-#define CMD_SEL_OUT_BUF_STATUS	7
-#define CMD_DTR_ON		8
-#define CMD_DTR_OFF		9
+#define CMD_RECEIVE		0x0
+#define CMD_STOP_RECEIVE	0x1
+#define CMD_TRANSMIT		0x2
+#define CMD_STOP_TRANSMIT	0x3
+#define CMD_SEL_INPUT_BUF	0x4
+#define CMD_SEL_MODEM_STATUS	0x5
+#define CMD_SEL_IN_BUF_STATUS	0x6
+#define CMD_SEL_OUT_BUF_STATUS	0x7
+#define CMD_DTR_ON		0x8
+#define CMD_DTR_OFF		0x9
+#define CMD_CLEAR_ONE_CHAR	0xf
+
+struct amx_chan {
+	uint16_t		last_modem;
+	uint8_t			out_fifo[40];
+	unsigned		outw;
+	unsigned		outr;
+	struct elastic		*ep;
+	pthread_t		out_thread;
+	pthread_mutex_t		mtx;
+};
 
 struct io_amx {
 	int			speed;
-	int			chan;
-	uint16_t		select[NCHAN];
-	struct elastic		*ep[NCHAN];
+	struct amx_chan		chans[8];
 	struct iodev		*iop;
+	int			chan;
+	struct amx_chan		*cp;
 };
+
+static void *
+dev_amx_out_thread(void *priv)
+{
+	unsigned nout;
+	uint8_t buf[1];
+	struct amx_chan *cp = priv;
+	AN(cp);
+	AN(cp->mtx);
+
+	(void)priv;
+	while (1) {
+		AZ(pthread_mutex_lock(&cp->mtx));
+		if (cp->outr != cp->outw) {
+			buf[0] = cp->out_fifo[cp->outr++];
+			cp->outr %= sizeof(cp->out_fifo);
+			nout = 1;
+		} else {
+			nout = 0;
+		}
+		AZ(pthread_mutex_unlock(&cp->mtx));
+		if (nout) {
+			elastic_put(cp->ep, buf, 1);
+		}
+		usleep((nsec_per_char(cp->ep) / 1000) + 1);
+		//sleep(1);
+	}
+	return (NULL);
+}
 
 static void
 dev_amx_insfunc(struct iodev *iop, uint16_t ioi, uint16_t *reg)
@@ -71,21 +111,33 @@ dev_amx_insfunc(struct iodev *iop, uint16_t ioi, uint16_t *reg)
 	switch(IO_OPER(ioi)) {
 	case IO_DOA:
 		ap->chan = (*reg >> 8) & 7;
+		ap->cp = &ap->chans[ap->chan];
 		cmd = *reg & 0xf;
 		switch(cmd) {
 		case CMD_RECEIVE:
+			dev_trace(iop,"AMX ioi=0x%04x *reg=0x%04x chan=0x%x CMD_RX\n", ioi, reg ? *reg : 0, ap->chan);
 			break;
 		case CMD_TRANSMIT:
+			dev_trace(iop,"AMX ioi=0x%04x *reg=0x%04x chan=0x%x CMD_TX\n", ioi, reg ? *reg : 0, ap->chan);
 			break;
 		case CMD_DTR_OFF:
+			dev_trace(iop,"AMX ioi=0x%04x *reg=0x%04x chan=0x%x CMD_DTR_OFF\n", ioi, reg ? *reg : 0, ap->chan);
 			break;
 		case CMD_DTR_ON:
+			dev_trace(iop,"AMX ioi=0x%04x *reg=0x%04x chan=0x%x CMD_DTR_ON\n", ioi, reg ? *reg : 0, ap->chan);
 			break;
 		case CMD_SEL_INPUT_BUF:
-			if (elastic_empty(ap->ep[ap->chan])) {
+			//dev_trace(iop,"AMX ioi=0x%04x *reg=0x%04x chan=0x%x CMD_SEL_IBUF\n", ioi, reg ? *reg : 0, ap->chan);
+			if (elastic_empty(ap->cp->ep)) {
 				iop->ireg_a = 0x0080;
+				if (!ap->cp->ep->carrier && ap->cp->last_modem) {
+					iop->ireg_a |= 0x3000;
+				}
+				ap->cp->last_modem = ap->cp->ep->carrier;
 			} else {
-				sz = elastic_get(ap->ep[ap->chan], buf, 1);
+				sz = elastic_get(ap->cp->ep, buf, 1);
+				//printf("INP %d %zd %02x\n", ap->chan, sz, buf[0]);
+				//buf[0] &= 0x7f;
 				assert(sz == 1);
 				if (buf[0] == '\n')
 					buf[0] = '\r';
@@ -93,28 +145,62 @@ dev_amx_insfunc(struct iodev *iop, uint16_t ioi, uint16_t *reg)
 			}
 			break;
 		case CMD_SEL_MODEM_STATUS:
-			iop->ireg_a = 0x0000;
+			if (!ap->cp->ep->carrier) {
+				iop->ireg_a = 0x6000;
+			} else {
+				iop->ireg_a = 0x0000;
+			}
+			dev_trace(iop,"AMX ioi=0x%04x *reg=0x%04x chan=0x%x CMD_MODEM_STATUS\n", ioi, iop->ireg_a, ap->chan);
 			break;
 		case CMD_SEL_IN_BUF_STATUS:
+			dev_trace(iop,"AMX ioi=0x%04x *reg=0x%04x chan=0x%x CMD_SEL_IBUF_STATUS\n", ioi, reg ? *reg : 0, ap->chan);
 			iop->ireg_a = 0x0000;
 			break;
 		case CMD_SEL_OUT_BUF_STATUS:
-			iop->ireg_a = 0xc000;
+			dev_trace(iop,"AMX ioi=0x%04x *reg=0x%04x chan=0x%x CMD_SEL_OBUF_STATUS\n", ioi, reg ? *reg : 0, ap->chan);
+			AZ(pthread_mutex_lock(&ap->cp->mtx));
+			iop->ireg_a = 0x0000;
+			unsigned nfifo = sizeof(ap->cp->out_fifo) + ap->cp->outw - ap->cp->outr;
+			nfifo %= sizeof(ap->cp->out_fifo);
+			if (nfifo < 32)
+				iop->ireg_a |= 0x8000;
+			if (ap->cp->outw == ap->cp->outr)
+				iop->ireg_a |= 0x4000;
+			AZ(pthread_mutex_unlock(&ap->cp->mtx));
+			break;
+		case CMD_CLEAR_ONE_CHAR:
+			dev_trace(iop,"AMX ioi=0x%04x *reg=0x%04x chan=0x%x CMD_CLEAR_ONE_CHAR\n", ioi, reg ? *reg : 0, ap->chan);
+			AZ(pthread_mutex_lock(&ap->cp->mtx));
+			if (ap->cp->outw != ap->cp->outr) {
+				ap->cp->outw += sizeof(ap->cp->out_fifo) - 1;
+				ap->cp->outw %= sizeof(ap->cp->out_fifo);
+			}
+			if (ap->cp->outw == ap->cp->outr) {
+				iop->ireg_a = 0x0000;
+			} else {
+				iop->ireg_a = 0x8000;
+			}
+			AZ(pthread_mutex_unlock(&ap->cp->mtx));
 			break;
 		default:
-			dev_trace(iop, "AMX %d cmd=0x%x\n", ap->chan, cmd);
+			dev_trace(iop, "AMX %d cmd=0x%04x ???\n", ap->chan, cmd);
 			break;
 		}
 		break;
 	case IO_DIA:
 		*reg = iop->ireg_a;
+		dev_trace(iop,"AMX ioi=0x%04x *reg=0x%04x chan=0x%x DIA\n", ioi, reg ? *reg : 0, ap->chan);
 		break;
 	case IO_DOB:
+		dev_trace(iop,"AMX ioi=0x%04x *reg=0x%04x chan=0x%x DOB\n", ioi, reg ? *reg : 0, ap->chan);
 		ap->chan = (*reg >> 8) & 7;
-		buf[0] = *reg & 0xff;
-		elastic_put(ap->ep[ap->chan], buf, 1);
+		AZ(pthread_mutex_lock(&ap->cp->mtx));
+		ap->cp->out_fifo[ap->cp->outw++] = *reg & 0xff;
+		ap->cp->outw %= sizeof(ap->cp->out_fifo);
+		AZ(pthread_mutex_unlock(&ap->cp->mtx));
 		break;
 	case IO_DOC:
+		dev_trace(iop,"AMX ioi=0x%04x *reg=0x%04x chan=0x%x DOC\n", ioi, reg ? *reg : 0, ap->chan);
 		break;
 	default:
 		break;
@@ -126,6 +212,7 @@ static void * v_matchproto_(new_dev_f)
 new_amx(struct iodev *iop, struct iodev *iop2)
 {
 	struct io_amx *ap;
+	struct amx_chan *cp;
 	int i;
 
 	AN(iop);
@@ -137,11 +224,17 @@ new_amx(struct iodev *iop, struct iodev *iop2)
 	ap->speed = 2400;
 
 	for (i = 0; i < NCHAN; i++) {
-		ap->ep[i] = elastic_new(ap->iop->cs, O_RDWR);
-		AN(ap->ep[i]);
-		ap->ep[i]->bits_per_char = 11;
-		ap->ep[i]->bits_per_sec = 9600;
+		cp = &ap->chans[i];
+		cp->ep = elastic_new(ap->iop->cs, O_RDWR);
+		AN(cp->ep);
+		cp->ep->bits_per_char = 11;
+		cp->ep->bits_per_sec = 9600;
+		AZ(pthread_mutex_init(&cp->mtx, NULL))
+		AN(cp->out_fifo);
+		AZ(pthread_create(&cp->out_thread, NULL, dev_amx_out_thread, cp));
 	}
+	ap->chan = 0;
+	ap->cp = &ap->chans[ap->chan];
 	ap->iop->io_func = dev_amx_insfunc;
 	ap->iop->priv = ap;
 	cpu_add_dev(iop, NULL);
@@ -185,7 +278,7 @@ cli_amx(struct cli *cli)
 			cli->av += 2;
 			if (!cli->ac)
 				continue;
-			if (cli_elastic(ap->ep[port], cli))
+			if (cli_elastic(ap->chans[port].ep, cli))
 				continue;
 			cli_unknown(cli);
 			return;
