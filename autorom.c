@@ -164,8 +164,8 @@ static uint16_t autorom_appendix_e[32] = {
 /* 00006 */ 0000041,	// SA:		JMP	41	; GO TO PRE-LOADER
 /* 00007 */ 0062016,	// GETCD:	DOB	0,CDR	; OUTPUT BUFFER ADDRESS
 /* 00010 */ 0061116,	//		DOAS	0,CDR	; OUTPUT READ COMMAND
-/* 00011 */ 0063516,	//		SKPBN	CDR	; CHECK FOR THE READER IS STARTED
-/* 00012 */ 0000010,	//		JMP	.-1	; NO, TRY AGAIN
+/* 00011 */ 0063416,	//		SKPBN	CDR	; CHECK FOR THE READER IS STARTED
+/* 00012 */ 0000010,	//		JMP	.-2	; NO, TRY AGAIN
 /* 00013 */ 0063516,	//		SKPBZ	CDR	; WAIT FOR COMPLETATION OF
 /* 00014 */ 0000013,	//		JMP	.-1	; READING A CARD
 /* 00015 */ 0001400,	//		JMP	0,3	; RETURN
@@ -299,6 +299,7 @@ AutoRom(struct rc3600 *cs)
 	switch (cs->switches & 0x3f) {
 	case 000:
 		// CONSOLE INIT + MEMORY RESET
+		printf("AUTOROM 0x%x (A)\n", cs->switches);
 		autorom = autorom_appendix_a;
 		break;
 	case 001:
@@ -307,10 +308,12 @@ AutoRom(struct rc3600 *cs)
 		break;
 	case 002:
 		// CONSOLE ECHO/CHARGEN
+		printf("AUTOROM 0x%x (C)\n", cs->switches);
 		autorom = autorom_appendix_c;
 		break;
 	case 016:
 		// CARD READER
+		printf("AUTOROM 0x%x (E)\n", cs->switches);
 		autorom = autorom_appendix_e;
 		break;
 	case 020:
@@ -319,17 +322,21 @@ AutoRom(struct rc3600 *cs)
 		break;
 	case 056:
 		// CARD READER
+		printf("AUTOROM 0x%x (E)\n", cs->switches);
 		autorom = autorom_appendix_e;
 		break;
 	case 061:
 		// FLEXIBLE DISC PROGRAM LOAD
+		printf("AUTOROM 0x%x (F)\n", cs->switches);
 		autorom = autorom_appendix_f;
 		break;
 	case 073:
 		// DISC PROGRAM LOAD
+		printf("AUTOROM 0x%x (G)\n", cs->switches);
 		autorom = autorom_appendix_g;
 		break;
 	default:
+		printf("AUTOROM 0x%x (D)\n", cs->switches);
 		autorom = autorom_appendix_d;
 		break;
 	}
@@ -337,4 +344,3 @@ AutoRom(struct rc3600 *cs)
 	for(adr = 0; adr < 32; adr++)
 		core_write(cs, adr, autorom[adr], CORE_NULL);
 }
-
