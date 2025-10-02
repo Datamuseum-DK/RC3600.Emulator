@@ -359,6 +359,20 @@ cli_exit(struct cli *cli)
 	exit(w);
 }
 
+void
+cli_delay(struct cli *cli)
+{
+	if (cli->help) {
+		cli_printf(cli, "%s <seconds>\n", cli->av[0]);
+		return;
+	}
+	if (cli_n_args(cli, 1))
+		return;
+	double d = strtod(cli->av[1], NULL);
+	usleep(d * 1e6);
+}
+
+
 /**********************************************************************/
 
 void
@@ -479,6 +493,7 @@ static const struct cli_cmds {
 	{ "x",		cli_examine },
 	{ "d",		cli_deposit },
 	{ "b",		cli_break },
+	{ "delay",	cli_delay },
 	{ "?",		cli_help },
 	{ NULL,		NULL },
 };
