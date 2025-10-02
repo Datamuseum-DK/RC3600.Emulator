@@ -159,7 +159,7 @@ dev_dkp_iofunc(struct iodev *iop, uint16_t ioi, uint16_t *reg)
 }
 
 static void
-do_xfer(struct iodev *iop, struct io_dkp *tp, int do_read)
+do_xfer(struct iodev *iop, struct io_dkp *tp, int do_disk_read)
 {
 	unsigned u;
 	uint8_t *p;
@@ -167,17 +167,22 @@ do_xfer(struct iodev *iop, struct io_dkp *tp, int do_read)
 
 	AN(iop);
 	AN(tp);
+	usleep(2000);
 	callout_dev_sleep(iop, 200000);
 	dd = &tp->drive[tp->drv];
 	do {
 		assert(dd->cyl < 0xff);
 		u = ((((dd->cyl * TPC) + tp->hd) * SPT) + tp->sec) * BPS;
 		p = dd->img + u;
+		dev_trace(iop, "DKP %3d %d %2d 0x%x %d 0x%x\n",
+		    dd->cyl, tp->hd, tp->sec, u/2, tp->nsec, tp->core_adr);
 		for(u = 0; u < 256; u++, p += 2, tp->core_adr++) {
-			if (do_read)
-				core_write(iop->cs, tp->core_adr, be16dec(p), CORE_DMA);
+			if (do_disk_read)
+				core_write(iop->cs,
+				    tp->core_adr, be16dec(p), CORE_DMA);
 			else
-				be16enc(p, core_read(iop->cs, tp->core_adr, CORE_DMA | CORE_DATA));
+				be16enc(p, core_read(
+				    iop->cs, tp->core_adr, CORE_DMA | CORE_DATA));
 		}
 
 		if (++tp->sec == SPT) {
@@ -199,7 +204,7 @@ do_xfer(struct iodev *iop, struct io_dkp *tp, int do_read)
 	// Seek complete
 	//iop->ireg_a |= 0x4000 >> tp->drive[0].drive_no;
 
-	if (!do_read)
+	if (!do_disk_read)
 		tp->core_adr += 2;
 
 	AZ(pthread_mutex_unlock(&iop->mtx));
@@ -260,7 +265,7 @@ dkp_seek_thread(void *priv)
 		AZ(pthread_mutex_unlock(&dp->seek_mtx));
 
 		//printf("SEEK/RECAL BEGIN\n");
-		// usleep(200);
+		usleep(200);
 		//printf("SEEK/RECAL END\n");
 
 		AZ(pthread_mutex_lock(&dp->iop->mtx));
@@ -378,6 +383,8 @@ cli_dkp(struct cli *cli)
 	AN(tp->iop->priv);
 
 	while (cli->ac && !cli->status) {
+		if (cli_dev_trace(tp->iop, cli))
+			continue;
 		if (!strcasecmp(*cli->av, "load")) {
 			dkp_load_save(tp, cli, 0);
 			return;
