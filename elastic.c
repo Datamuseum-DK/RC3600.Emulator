@@ -302,15 +302,17 @@ cli_elastic(struct elastic *ep, struct cli *cli)
 	}
 
 	if (!strcmp(*cli->av, "<<")) {
-		if (cli_n_args(cli, 1))
-			return (1);
 		if (ep->mode == O_WRONLY) {
 			return (cli_error(cli, "Only inputs can '<<'\n"));
 		}
-		elastic_inject(ep, cli->av[1], -1);
-		elastic_inject(ep, "\r", -1);
-		cli->av += 2;
-		cli->ac -= 2;
+		if (cli->ac > 1) {
+			elastic_inject(ep, cli->av[1], -1);
+			cli->av += 2;
+			cli->ac -= 2;
+			if (cli->ac == 0) {
+				elastic_inject(ep, "\r", -1);
+			}
+		}
 		return (1);
 	}
 	if (cli_elastic_fd(ep, cli))

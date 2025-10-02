@@ -66,6 +66,7 @@ struct elastic {
 
 	struct elastic_match		*em;
 	struct elastic_fd		*out;
+	unsigned			carrier;
 };
 
 struct elastic *elastic_new(struct rc3600 *, int mode);

@@ -92,9 +92,13 @@ elastic_telnet_acceptor(void *priv)
 		(void)write(fd, buf, 3);
 
 		skip = 0;
+		aa.ep->carrier += 1;
+		// printf("DCD+\n");
 		while (1) {
 			sz = read(fd, buf, 1);
 			if (sz <=  0) {
+				aa.ep->carrier -= 1;
+				//printf("DCD-\n");
 				elastic_unsubscribe(aa.ep, aa.ws);
 				(void)(close(fd));
 				break;
@@ -103,7 +107,7 @@ elastic_telnet_acceptor(void *priv)
 					skip--;
 				} else if (buf[0] == 0xff) {
 					skip = 2;
-				} else {
+				} else if (buf[0] < 0x80) {
 					elastic_inject(aa.ep, buf, 1);
 				}
 			}
