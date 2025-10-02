@@ -190,7 +190,10 @@ std_skp_ins(struct iodev *iop, uint16_t ioi)
 	}
 }
 
-/* DEVICE NUMBER ASSIGMENTS ========================================= */
+/* DEVICE NUMBER ASSIGMENTS =========================================
+ *
+ * Based on RCSL 43-GL-6224 [30001046]
+ */
 
 struct dev_assignment {
 	const char		*name;
@@ -247,6 +250,8 @@ static const struct dev_assignment default_assignments[] = {
 	{ "PTR",	1,	023,	11,	PTR_TXT },
 	{ "AMX",	3,	024,	 2,	AMX_TXT },
 	{ "TMXO",	1,	024,	 0,	TMX_TXT },
+	{ "TTI",	7,	025,	14,	TTY_TXT },
+	{ "TTO",	7,	026,	15,	TTY_TXT },
 	{ "TMXI",	1,	025,	 1,	TMX_TXT },
 	{ "TMXO",	0,	026,	 0,	TMX_TXT },
 	{ "TMXI",	0,	027,	 1,	TMX_TXT },
@@ -318,8 +323,8 @@ cli_mk_iop(struct cli *cli, const char *drvname, unsigned unit)
 		if (!strcmp(da->name, drvname) && da->unit == unit)
 			break;
 	if (da->name == NULL) {
-		(void)cli_error(cli, "No default address+imask for %s%u\n", drvname, unit);
-		// ... use 'create 7 bla bla bla'
+		(void)cli_error(cli,
+		    "No default address+imask for %s%u\n", drvname, unit);
 		return (NULL);
 	}
 	iop = calloc(sizeof *iop, 1);
@@ -327,6 +332,7 @@ cli_mk_iop(struct cli *cli, const char *drvname, unsigned unit)
 	iop->devno = da->devno;
 	iop->imask = da->imask;
 	bprintf(iop->name, "%s%u", drvname, unit);
+	printf("Added %s at 0o%02o\n", iop->name, iop->devno);
 	iop->cs = cli->cs;
 	return (iop);
 }
