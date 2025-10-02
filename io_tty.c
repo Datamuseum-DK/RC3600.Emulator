@@ -91,7 +91,7 @@ dev_tto_iofunc(struct iodev *iop, uint16_t ioi, uint16_t *reg)
 			break;
 		default:
 			if (buf[0] < 0x20)
-				printf("\x1b[1m「%02x」\x1b[m", buf[0]);
+				printf("\x1b[1m»%02x«\x1b[m", buf[0]);
 			else
 				printf("\x1b[1m%c\x1b[m", buf[0]);
 			break;
