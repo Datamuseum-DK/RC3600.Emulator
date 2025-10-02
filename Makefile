@@ -15,6 +15,7 @@ OBJS	+= io_ptp.o
 OBJS	+= io_ptr.o
 OBJS	+= io_fdd.o
 OBJS	+= io_amx.o
+OBJS	+= io_cdr.o
 
 CFLAGS	+= -Wall -Werror -pthread -g -O0
 LDFLAGS	+= -lm

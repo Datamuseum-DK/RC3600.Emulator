@@ -40,6 +40,7 @@
 struct io_cdr {
 	struct iodev		*iop;
 	int			fd;
+	unsigned		card_no;
 };
 
 static void*
@@ -67,8 +68,9 @@ dev_cdr_thread(void *priv)
 			core_write(iod->cs, iod->oreg_b, u, CORE_DMA);
 			iod->oreg_b += 1;
 		}
-		dev_trace(iod, "CDR <@0x%04x\n", iod->oreg_b);
-		printf("cdr<\n");
+		cp->card_no++;
+		dev_trace(iod, "CDR #%u <@0x%04x\n", cp->card_no, iod->oreg_b);
+		printf("cdr #%u\n", cp->card_no);
 		AZ(pthread_mutex_lock(&iod->mtx));
 		iod->done = 1;
 		intr_raise(iod);

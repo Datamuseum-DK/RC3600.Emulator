@@ -485,6 +485,7 @@ static const struct cli_cmds {
 	{ "ptr",	cli_ptr },
 	{ "fdd",	cli_fdd },
 	{ "amx",	cli_amx },
+	{ "cdr",	cli_cdr },
 
 	{ "domus",	cli_domus },
 
