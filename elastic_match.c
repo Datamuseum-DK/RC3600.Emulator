@@ -138,6 +138,7 @@ cli_elastic_match(struct elastic *ep, struct cli *cli)
 		cli_printf(cli, "\tmatch expect <string>\n");
 		cli_printf(cli, "\t\tShortcut for 'arm' + 'wait'\n");
 		cli_printf(cli, "\tmatch xon\n");
+		cli_printf(cli, "\tmatch nl\n");
 		cli_printf(cli, "\t\tWait for XON character\n");
 		return (0);
 	}
@@ -179,6 +180,15 @@ cli_elastic_match(struct elastic *ep, struct cli *cli)
 		if (cli_n_args(cli, 0))
 			return(1);
 		elastic_match_arm(ep, "\x11");
+		elastic_match_wait(ep);
+		cli->av += 1;
+		cli->ac -= 1;
+		return (1);
+	}
+	if (!strcasecmp(*cli->av, "nl")) {
+		if (cli_n_args(cli, 0))
+			return(1);
+		elastic_match_arm(ep, "\n");
 		elastic_match_wait(ep);
 		cli->av += 1;
 		cli->ac -= 1;
