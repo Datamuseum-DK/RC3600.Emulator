@@ -436,6 +436,11 @@ cli_unknown(struct cli *cli)
 void
 cli_background(struct cli *cli)
 {
+	if (cli->help) {
+		cli_printf(cli, "%s\n", cli->av[0]);
+		cli_printf(cli, "\t\tStop CLI processing\n");
+		return;
+	}
 
 	cli_printf(cli, "CLI processing stops\n.");
 	while (1) {
