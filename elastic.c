@@ -229,6 +229,21 @@ elastic_empty(const struct elastic *ep)
 	return(TAILQ_EMPTY(&ep->chunks_in));
 }
 
+static void
+elastic_drain(struct elastic *ep)
+{
+	struct chunk *cp;
+
+	AZ(pthread_mutex_lock(&ep->mtx));
+	while (!TAILQ_EMPTY(&ep->chunks_in)) {
+		cp = TAILQ_FIRST(&ep->chunks_in);
+		TAILQ_REMOVE(&ep->chunks_in, cp, next);
+		free(cp->ptr);
+		free(cp);
+	}
+	AZ(pthread_mutex_unlock(&ep->mtx));
+}
+
 int v_matchproto_(cli_elastic_f)
 cli_elastic(struct elastic *ep, struct cli *cli)
 {
@@ -296,6 +311,15 @@ cli_elastic(struct elastic *ep, struct cli *cli)
 		if (cli_n_args(cli, 0))
 			return (1);
 		ep->text = 0;
+		cli->ac--;
+		cli->av++;
+		return (1);
+	}
+
+	if (!strcmp(*cli->av, "drain")) {
+		if (cli_n_args(cli, 0))
+			return (1);
+		elastic_drain(ep);
 		cli->ac--;
 		cli->av++;
 		return (1);
