@@ -27,6 +27,13 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
+ *
+ * ireg_a 0x4000 -> NOT INTERFACED
+ * ireg_a 0x2000 -> NOT OPERABLE
+ * ireg_a 0x1000 -> REJECT FAILED
+ * ireg_a 0x0400 -> FEED ERROR
+ * ireg_a 0x0200 -> ILLEGAL COMMAND
+ * ireg_a 0x0100 -> HOPPER EMPTY
  */
 
 #include <errno.h>
@@ -57,26 +64,47 @@ dev_cdr_thread(void *priv)
 		while (!iod->busy)
 			AZ(pthread_cond_wait(&iod->cond, &iod->mtx));
 		assert(cp->fd >= 0);
-		AZ(pthread_mutex_unlock(&iod->mtx));
 
+		AZ(pthread_mutex_unlock(&iod->mtx));
 		dev_trace(iod, "CDR >@0x%04x\n", iod->oreg_b);
-		callout_dev_sleep(iod, 1000);
-		i = read(cp->fd, buf, sizeof buf);
-		assert(i == sizeof buf);
-		for (i = 0; i < sizeof buf; i += 2) {
-			uint16_t u = (buf[i] | (buf[i+1]<<8)) >> 4;
-			core_write(iod->cs, iod->oreg_b, u, CORE_DMA);
-			iod->oreg_b += 1;
-		}
-		cp->card_no++;
-		dev_trace(iod, "CDR #%u <@0x%04x\n", cp->card_no, iod->oreg_b);
-		printf("cdr #%u\n", cp->card_no);
+		callout_dev_sleep(iod, 10000);
 		AZ(pthread_mutex_lock(&iod->mtx));
+
+		i = read(cp->fd, buf, sizeof buf);
+                if (i == sizeof buf) {
+			iod->ireg_a &= ~0x0100;
+			for (i = 0; i < sizeof buf; i += 2) {
+				uint16_t u = (buf[i] | (buf[i+1]<<8)) >> 4;
+				core_write(iod->cs, iod->oreg_b, u, CORE_DMA);
+				iod->oreg_b += 1;
+			}
+			cp->card_no++;
+			dev_trace(iod, "CDR #%u <@0x%04x\n", cp->card_no, iod->oreg_b);
+		} else {
+			iod->ireg_a |= 0x0100;
+		}
 		iod->done = 1;
 		intr_raise(iod);
 		iod->busy = 0;
 	}
 }
+
+static void
+dev_cdr_insfunc(struct iodev *iop, uint16_t ioi, uint16_t *reg)
+{
+
+	std_io_ins(iop, ioi, reg);
+
+	switch(IO_OPER(ioi)) {
+	case 0:	// IORST
+		iop->ireg_b = iop->oreg_b = 0;
+		break;
+	case IO_DOB:
+		iop->ireg_b = iop->oreg_b & 0x7fff;
+		break;
+	}
+}
+
 
 static void * v_matchproto_(new_dev_f)
 new_cdr(struct iodev *iop1, struct iodev *iop2)
@@ -92,6 +120,7 @@ new_cdr(struct iodev *iop1, struct iodev *iop2)
 	tp->fd = -1;
 	tp->iop = iop1;
 	tp->iop->priv = tp;
+	tp->iop->io_func = dev_cdr_insfunc;
 	cpu_add_dev(tp->iop, dev_cdr_thread);
 	return (tp);
 }
