@@ -1,8 +1,14 @@
-cpu model RC3603
+cpu model RC3803
 cpu model
 ptr
 rtc
+nodev 0x00
+nodev 0x0f
+nodev 0x1a
+nodev 0x1b
+nodev 0x1d
 cdr 0 load /critter/DDHF/2025/20250930_hulkort/_50005643.crd
+#cdr 0 load /tmp/_.crd
 cdr 0 trace 2
 tty telnet :2100
 tty baud 9600
@@ -19,8 +25,8 @@ ptr 0 < /critter/BitStoreCache/Datamuseum.dk/30001617.bin
 tty << ""
 wait_halt
 trace 0
-deposit pc 0x083
-switch 0000000
+deposit pc 0x080
+switch 0x2000
 start
 tty match expect "HOPPER EMPTY"
 exit
