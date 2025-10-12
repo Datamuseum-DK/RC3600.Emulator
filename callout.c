@@ -125,6 +125,16 @@ callout_dev_sleep(struct iodev *iop, nanosec when)
 	AZ(pthread_mutex_unlock(&iop->mtx));
 }
 
+void
+callout_dev_sleep_locked(struct iodev *iop, nanosec when)
+{
+	struct callout *co;
+
+	co = callout_wake_dev_rel(iop, when);
+	AN(co);
+	AZ(pthread_cond_wait(&iop->sleep_cond, &iop->mtx));
+}
+
 /**********************************************************************/
 
 static void

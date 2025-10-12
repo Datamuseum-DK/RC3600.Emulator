@@ -203,6 +203,7 @@ uint16_t intr_inta(struct rc3600 *cs);
 
 nanosec now(void);
 void callout_dev_sleep(struct iodev *, nanosec);
+void callout_dev_sleep_locked(struct iodev *, nanosec);
 void callout_dev_is_done(struct iodev *iop, nanosec when);
 void callout_dev_is_done_abs(struct iodev *iop, nanosec when);
 
@@ -324,6 +325,7 @@ cli_func_f cli_fdd;
 cli_func_f cli_amx;
 cli_func_f cli_cdr;
 cli_func_f cli_domus;
+cli_func_f cli_nodev;
 
 /* DISASSEMBLER *******************************************************/
 
