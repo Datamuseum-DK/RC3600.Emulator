@@ -42,12 +42,12 @@ static void v_matchproto_(iodev_io_f)
 no_dev_io_ins(struct iodev *iop, uint16_t ioi, uint16_t *reg)
 {
 
-if (1) {
-	trace(iop->cs,
-	    "Unclaimed IO: 0x%04x dev=0x%x\n",
-	    iop->cs->ins, iop->cs->ins & 0x3f);
-	trace_state(iop->cs);
-}
+	if (iop->trace) {
+		trace(iop->cs,
+		    "Unclaimed IO: 0x%04x dev=0x%x\n",
+		    iop->cs->ins, iop->cs->ins & 0x3f);
+		trace_state(iop->cs);
+	}
 	iop->ireg_a = 0;
 	iop->ireg_b = 0;
 	iop->ireg_c = 0;
@@ -59,9 +59,11 @@ if (1) {
 static void v_matchproto_(iodev_skp_f)
 no_dev_skp_ins(struct iodev *iop, uint16_t ioi)
 {
-	trace(iop->cs,
-	    "Unclaimed IO-SKP: 0x%04x dev=0x%x\n",
-	    iop->cs->ins, iop->cs->ins & 0x3f);
+	if (iop->trace) {
+		trace(iop->cs,
+		    "Unclaimed IO-SKP: 0x%04x dev=0x%x\n",
+		    iop->cs->ins, iop->cs->ins & 0x3f);
+	}
 	iop->busy = iop->done = 0;
 	std_skp_ins(iop, ioi);
 }
@@ -72,12 +74,14 @@ iodev_init(struct rc3600 *cs)
 	int i;
 
 	cs->nodev = calloc(sizeof *cs->nodev, 1);
-	cs->nodev->cs = cs;
 	AN(cs->nodev);
-	AZ(pthread_mutex_init(&cs->nodev->mtx, NULL));
-	AZ(pthread_cond_init(&cs->nodev->cond, NULL));
+	cs->nodev->cs = cs;
+	cs->nodev->trace = 1;
 	cs->nodev->io_func = no_dev_io_ins;
 	cs->nodev->skp_func = no_dev_skp_ins;
+
+	AZ(pthread_mutex_init(&cs->nodev->mtx, NULL));
+	AZ(pthread_cond_init(&cs->nodev->cond, NULL));
 
 	for (i = 0; i < 64; i++)
 		cs->iodevs[i] = cs->nodev;
@@ -379,4 +383,32 @@ cli_dev_get_unit(struct cli *cli, const char *drv1, const char *drv2, new_dev_f 
 	}
 	rv = func(iop1, iop2);
 	return (rv);
+}
+
+void v_matchproto_(cli_func_f)
+cli_nodev(struct cli *cli)
+{
+	struct iodev *iop;
+
+	if (cli->help) {
+		cli_io_help(cli, "No device", 1, 1);
+		return;
+	}
+
+	if (cli_n_args(cli, 1))
+		return;
+	unsigned devno = strtoul(cli->av[1], NULL, 0);
+	if (devno < 0 || devno > 62) {
+		cli_error(cli, "Invalid device number\n");
+		return;
+	}
+	iop = calloc(sizeof *iop, 1);
+	AN(iop);
+	iop->cs = cli->cs;
+	iop->trace = 0;
+	iop->io_func = no_dev_io_ins;
+	iop->skp_func = no_dev_skp_ins;
+	iop->devno = devno;
+	iop->imask = 1;
+	cpu_add_dev(iop, NULL);
 }
