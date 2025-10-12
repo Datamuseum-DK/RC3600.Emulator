@@ -34,6 +34,9 @@
  * ireg_a 0x0400 -> FEED ERROR
  * ireg_a 0x0200 -> ILLEGAL COMMAND
  * ireg_a 0x0100 -> HOPPER EMPTY
+ * ireg_a 0x0040 -> DATA LATE
+ * ireg_a 0x0020 -> REED ERROR
+ *        0x7760 -> BAD MASK
  */
 
 #include <errno.h>
@@ -65,21 +68,23 @@ dev_cdr_thread(void *priv)
 			AZ(pthread_cond_wait(&iod->cond, &iod->mtx));
 		assert(cp->fd >= 0);
 
-		AZ(pthread_mutex_unlock(&iod->mtx));
+		printf("CDR @%d>@0x%04x\n", cp->card_no + 1, iod->oreg_b);
 		dev_trace(iod, "CDR >@0x%04x\n", iod->oreg_b);
-		callout_dev_sleep(iod, 10000);
-		AZ(pthread_mutex_lock(&iod->mtx));
+		callout_dev_sleep_locked(iod, 25000000);
 
 		i = read(cp->fd, buf, sizeof buf);
-                if (i == sizeof buf) {
+		if (i == sizeof buf) {
 			iod->ireg_a &= ~0x0100;
 			for (i = 0; i < sizeof buf; i += 2) {
 				uint16_t u = (buf[i] | (buf[i+1]<<8)) >> 4;
 				core_write(iod->cs, iod->oreg_b, u, CORE_DMA);
 				iod->oreg_b += 1;
+				iod->ireg_b = iod->oreg_b;
+				callout_dev_sleep_locked(iod, 2000000);
 			}
 			cp->card_no++;
 			dev_trace(iod, "CDR #%u <@0x%04x\n", cp->card_no, iod->oreg_b);
+			callout_dev_sleep_locked(iod, 25000000);
 		} else {
 			iod->ireg_a |= 0x0100;
 		}
