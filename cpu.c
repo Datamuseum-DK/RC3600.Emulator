@@ -53,7 +53,7 @@ cpu_add_dev(struct iodev *iop, iodev_thr *thr)
 	AN(iop);
 	cs = iop->cs;
 	AN(cs);
-	AN(iop->devno);
+	assert(0 <= iop->devno && iop->devno <= 62);
 	assert(cs->iodevs[iop->devno] == cs->nodev);
 	AN(iop->imask);
 	AZ(pthread_mutex_init(&iop->mtx, NULL));
